@@ -1,0 +1,36 @@
+﻿
+Kalendersida
+	Veckoplanering
+		Lägga till/ta bort/ändra valt recept
+			Ikon förändras
+			Olika färger för lunch/middag + äta "ute"
+			När en vecka väljs (eller när man klickar calender och nuvarande vecka inte finns) läggs  menuitem till i DB för de 7 dagarna om de inte finns.
+			SelectedItem="{Binding Converter={StaticResource }}"
+			
+		Visa senaste 4 veckornas
+			Mer kondenserad view
+			Matcha mouseover  för alla förekomster
+
+		Statistik
+			Välja intervall
+				Senaste månaden
+				Senaste tre månaderna
+				Iår
+				Senaste året
+				Valrfritt
+
+			Vanligaste rätterna
+				Top 5
+
+			Vanligaste lunchen
+				I veckan (mån - tor)
+				På helgen
+
+			Vanligaste middagen
+				I veckan (mån - tor)
+				På helgen
+
+			Antal unika luncher/middagar (exklusive äta ute)
+			Antal äta ute
+
+Lägga till recept till recept
