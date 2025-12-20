@@ -1,4 +1,7 @@
-﻿using Matsedeln.Usercontrols;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using Matsedeln.Models;
+using Matsedeln.Usercontrols;
+using Matsedeln.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -29,38 +32,45 @@ namespace Matsedeln.Pages
         }
         #endregion
 
-        private readonly MainWindow mainWindow;
 
-        private Border selectedBorder;
-        public Border SelectedBorder
-        {
-            get { return selectedBorder; }
-            set
-            {
-                if (selectedBorder != value)
-                {
-                    selectedBorder = value;
-                    if (mainWindow.EnableAddGoodsBtn && selectedBorder != null && mainWindow.AddContentControl.Content is NewRecipeControl recipeControl)
-                    {
-                        recipeControl.ResetInput();
-                    }
-                    OnPropertyChanged(nameof(SelectedBorder));
-                }
-            }
-        }
+        public AppData Ad { get; }  = AppData.Instance;
 
-        public ObservableCollection<Recipe> RecipeList {get; set; }
-        public RecipePage(MainWindow main)
+        private Border _selectedBorder;
+        //public Border SelectedBorder
+        //{
+        //    get { return selectedBorder; }
+        //    set
+        //    {
+        //        if (selectedBorder != value)
+        //        {
+        //            selectedBorder = value;
+        //            if (view.EnableAddGoodsBtn && selectedBorder != null && mainWindow.AddContentControl.Content is NewRecipeControl recipeControl)
+        //            {
+        //                recipeControl.ResetInput();
+        //            }
+        //            OnPropertyChanged(nameof(SelectedBorder));
+        //        }
+        //    }
+        //}
+
+        public RecipePage()
         {
             InitializeComponent();
-            mainWindow = main;
-            DataContext = main;
-            
+            DataContext = new RecipePageViewModel();
+            Loaded += RecipePage_Loaded; ;
+        }
+
+        private void RecipePage_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is RecipePageViewModel vm)
+            {
+                vm.OnPageLoaded();  // Call the method directly
+            }
         }
 
         private void Select_Border(object sender, MouseButtonEventArgs e)
         {
-            if (mainWindow.AddContentControl.Content is ShoppingListControl shop && shop.ShowShoppinglist) return;
+            if (Ad.CurrentUserControl is ShoppingListControl shop && shop.ShowShoppinglist) return;
 
             if (sender is Border border && border.DataContext is Recipe recipe)
             {
@@ -69,13 +79,15 @@ namespace Matsedeln.Pages
                 if (border.BorderBrush == Brushes.Red)
                 {
                     border.BorderBrush = Brushes.Transparent;
-                    RemoveIngredientsFromShoppinglist(recipe);
+                    WeakReferenceMessenger.Default.Send(new AppData.RemoveIngredientShoplistMessage(recipe));
+                    //RemoveIngredientsFromShoppinglist(recipe);
                     return;
                 }
                 else
                 {
                     border.BorderBrush = Brushes.Red;
-                    AddIngredientToShoppinglist(recipe);
+                    WeakReferenceMessenger.Default.Send(new AppData.AddIngredientShopListMessage(recipe));
+                    //AddIngredientToShoppinglist(recipe);
                     return;
                 }
 
@@ -83,49 +95,7 @@ namespace Matsedeln.Pages
             }
         }
 
-        private void AddIngredientToShoppinglist(Recipe recipe)
-        {
-            if (mainWindow.AddContentControl.Content is ShoppingListControl shop && shop.ShowShoppinglist) return;
-            recipe.Ingredientlist.ToList().ForEach(ingredient =>
-            {
-                if (!mainWindow.ShoppingList.Any(i => i.Good.Name == ingredient.Good.Name))
-                {
-                    mainWindow.ShoppingList.Add(new Ingredient(ingredient));
-                }
-                else
-                {
-                    var existingItem = mainWindow.ShoppingList.First(i => i.Good.Name == ingredient.Good.Name);
-                    existingItem.QuantityInGram += ingredient.QuantityInGram;
-                    existingItem.QuantityInDl += ingredient.QuantityInDl;
-                    existingItem.QuantityInSt += ingredient.QuantityInSt;
-                    existingItem.QuantityInMsk += ingredient.QuantityInMsk;
-                    existingItem.QuantityInTsk += ingredient.QuantityInTsk;
-                }
-            });
-        }
 
-
-        private void RemoveIngredientsFromShoppinglist(Recipe recipe)
-        {
-            if (mainWindow.AddContentControl.Content is ShoppingListControl shop && shop.ShowShoppinglist) return;
-
-            recipe.Ingredientlist.ToList().ForEach(ingredient =>
-            {
-                var itemToRemove = mainWindow.ShoppingList.FirstOrDefault(i => i.Good.Name == ingredient.Good.Name);
-                if (itemToRemove != null)
-                {
-                    if (itemToRemove.QuantityInGram == ingredient.QuantityInGram) mainWindow.ShoppingList.Remove(itemToRemove);
-                    else
-                    {
-                        itemToRemove.QuantityInGram -= ingredient.QuantityInGram;
-                        itemToRemove.QuantityInDl -= ingredient.QuantityInDl;
-                        itemToRemove.QuantityInSt -= ingredient.QuantityInSt;
-                        itemToRemove.QuantityInMsk -= ingredient.QuantityInMsk;
-                        itemToRemove.QuantityInTsk -= ingredient.QuantityInTsk;
-                    }
-                }
-            });
-        }
 
         public IEnumerable<Border> FindAllBorders(DependencyObject parent)
         {
@@ -146,5 +116,7 @@ namespace Matsedeln.Pages
                 }
             }
         }
+
+
     }
 }

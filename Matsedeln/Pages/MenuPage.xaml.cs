@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Matsedeln.ViewModel;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows;
@@ -21,6 +22,7 @@ namespace Matsedeln.Pages
         public MenuPage()
         {
             InitializeComponent();
+            DataContext = new MenuPageViewModel();
         }
     }
 }

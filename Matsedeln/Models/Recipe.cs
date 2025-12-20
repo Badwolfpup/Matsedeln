@@ -1,11 +1,12 @@
-﻿using Matsedeln;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
 
-namespace Matsedeln
+namespace Matsedeln.Models
 {
     public class Recipe : INotifyPropertyChanged
     {
@@ -26,14 +27,15 @@ namespace Matsedeln
 
         public Recipe()
         {
-
+            ingredientlist = new ObservableCollection<Ingredient>();
         }
 
         private string name;
-        private string imagepath;
+        private string imagePath = "pack://application:,,,/Images/dummybild.png";
         private int id;
 
-        private ObservableCollection<Ingredient> ingredientlist;
+        private ICollection<Ingredient> ingredientlist;
+        [Required]
         public string Name
         {
             get { return name; }
@@ -60,7 +62,12 @@ namespace Matsedeln
             }
         }
 
-        public ObservableCollection<Ingredient> Ingredientlist
+        public int? ParentRecipeId { get; set; }  // FK for self-ref
+        public Recipe? ParentRecipe { get; set; }  // Nav prop
+        public ICollection<Recipe> ChildRecipes { get; set; } = new List<Recipe>();  // Reverse nav
+
+        [NotMapped]
+        public ICollection<Ingredient> Ingredientlist
         {
             get { return ingredientlist; }
             set
@@ -73,15 +80,15 @@ namespace Matsedeln
             }
         }
 
-        public string Imagepath
+        public string? ImagePath
         {
-            get { return imagepath; }
+            get { return imagePath; }
             set
             {
-                if (imagepath != value)
+                if (imagePath != value)
                 {
-                    imagepath = value;
-                    OnPropertyChanged(nameof(Imagepath));
+                    imagePath = value;
+                    OnPropertyChanged(nameof(ImagePath));
                 }
             }
         }

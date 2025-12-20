@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
 
-namespace Matsedeln
+namespace Matsedeln.Models
 {
     public class Goods : INotifyPropertyChanged
     {
@@ -18,7 +20,7 @@ namespace Matsedeln
         public Goods(string name, string imagepath)
         {
             this.name = name;
-            this.imagepath = imagepath;
+            this.ImagePath = imagepath;
         }
 
         public Goods()
@@ -27,12 +29,13 @@ namespace Matsedeln
 
         private string name;
 
-        private string imagepath;
+        private string imagePath = "pack://application:,,,/Images/dummybild.png";
 
-        private int gperdl;
-        private int gperst;
+        private int gramsperdeciliter;
+        private int gramsperstick;
         private int id;
 
+        [Required]
         public string Name
         {
             get { return name; }
@@ -46,15 +49,16 @@ namespace Matsedeln
             }
         }
 
-        public string Imagepath
+
+        public string? ImagePath
         {
-            get { return imagepath; }
+            get { return imagePath; }
             set
             {
-                if (imagepath != value)
+                if (imagePath != value)
                 {
-                    imagepath = value;
-                    OnPropertyChanged(nameof(Imagepath));
+                    imagePath = value;
+                    OnPropertyChanged(nameof(ImagePath));
                 }
             }
         }
@@ -72,29 +76,29 @@ namespace Matsedeln
             }
         }
 
-        public int GperDL
+        public int GramsPerDeciliter
         {
-            get => gperdl;
+            get => gramsperdeciliter;
             set
             {
-                if (gperdl != value)
+                if (gramsperdeciliter != value)
                 {
-                    gperdl = value;
-                    OnPropertyChanged(nameof(GperDL));
+                    gramsperdeciliter = value;
+                    OnPropertyChanged(nameof(GramsPerDeciliter));
                 }
 
             }
         }
 
-        public int GperST
+        public int GramsPerStick
         {
-            get => gperst;
+            get => gramsperstick;
             set
             {
-                if (gperst != value)
+                if (gramsperstick != value)
                 {
-                    gperst = value;
-                    OnPropertyChanged(nameof(GperST));
+                    gramsperstick = value;
+                    OnPropertyChanged(nameof(GramsPerStick));
                 }
             }
         }

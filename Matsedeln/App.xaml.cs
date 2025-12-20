@@ -12,6 +12,7 @@ namespace Matsedeln
     {
         public static IConfiguration Configuration { get; private set; }
 
+
         protected override void OnStartup(StartupEventArgs e)
         {
             var builder = new ConfigurationBuilder()
@@ -20,6 +21,7 @@ namespace Matsedeln
             Configuration = builder.Build();
 
             base.OnStartup(e);
+
         }
     }
 

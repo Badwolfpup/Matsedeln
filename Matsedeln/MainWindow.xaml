@@ -4,14 +4,17 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Matsedeln"
+        xmlns:pages="clr-namespace:Matsedeln.Pages"
+        xmlns:inter="http://schemas.microsoft.com/xaml/behaviors"
         mc:Ignorable="d"
-        Title="MainWindow" Height="1080" Width="1920" Loaded="window_Loaded">
+        Title="MainWindow" Height="1080" Width="1920">
 
         <Window.CommandBindings>
-            <CommandBinding Command="ApplicationCommands.Paste" Executed="OnPasteExecuted"/>
+            <CommandBinding Command="ApplicationCommands.Paste" Executed="PasteExecuted" />
         </Window.CommandBindings>
+
         <Window.Resources>
-            <BooleanToVisibilityConverter x:Key="ShowUserControl"/>
+                <BooleanToVisibilityConverter x:Key="ShowUserControl"/>
         </Window.Resources>
         <Grid Margin="10">
             <Grid.RowDefinitions>
@@ -21,38 +24,24 @@
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="2*"></ColumnDefinition>
-                <ColumnDefinition Width="3*"></ColumnDefinition>
-                <ColumnDefinition Width="3*"></ColumnDefinition>
+                <ColumnDefinition Width="6*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Visibility="{Binding ShowGoodsUsercontrol, Converter={StaticResource ShowUserControl}}">
-                    <Button Grid.Column="0" Margin="0 0 20 0" Click="ShowAddGoods_Click" IsEnabled="{Binding EnableAddGoodsBtn}" Background="{Binding ShowAddsBtnColor}">
-                        <Button.Content>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="16" Text="&#xF8AA;"/>
-                                <TextBlock Text="  vara" FontWeight="Bold"/>
-                            </StackPanel>
-                        </Button.Content>
-                    </Button>
-                    <Button Grid.Column="0" Click="ShowAddRecipe_Click" IsEnabled="{Binding EnableAddRecipeBtn}" Background="{Binding ShowAddRecipeBtnColor}">
-                        <Button.Content>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="16" Text="&#xF8AA;"/>
-                                <TextBlock Text=" recept" FontWeight="Bold" />
-                            </StackPanel>
-                        </Button.Content>
-                    </Button>
-                </StackPanel>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Visibility="{Binding ShowRecipeUsercontrol, Converter={StaticResource ShowUserControl}}">
-                <TextBlock >Inköpslista</TextBlock>    
-            </StackPanel>
+
+
             <StackPanel Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal">
-                <Button Content="Ingrediens" Click="ShowIngredients_Click" IsEnabled="{Binding EnableGoodsBtn}" Background="{Binding ShowGoodsBtnColor}"></Button>
-                <TextBox x:Name="FilterTextbox" Margin="15 0 15 0" TextChanged="FilterTextbox_TextChanged"></TextBox>
-                <Button Content="Recept" Click="ShowRecipes_Click" IsEnabled="{Binding EnableRecipeBtn}" Background="{Binding ShowRecipeBtnColor}"></Button>
-            <Button Content="Kalender" Click="Calendar_Click" ></Button>
+                <Button Content="Ingrediens" Command="{Binding ShowIngredientsPageCommand}"></Button>
+                <TextBox IsEnabled="{Binding Ad.IsFilterTextboxEnabled}" Margin="15 0 15 0" Text="{Binding Ad.FilterText, UpdateSourceTrigger=PropertyChanged}">
+                    <inter:Interaction.Triggers>
+                        <inter:EventTrigger EventName="TextChanged">
+                            <inter:InvokeCommandAction Command="{Binding FilterGoodsCommand, UpdateSourceTrigger=PropertyChanged}"/>
+                        </inter:EventTrigger>
+                    </inter:Interaction.Triggers>
+                </TextBox>
+                <Button Content="Recept" Command="{Binding ShowRecipesPageCommand}"></Button>
+                <Button Content="Kalender" Command="{Binding ShowMenuPageCommand}" ></Button>
             </StackPanel>
             <Button Grid.Column="2" HorizontalAlignment="Right" Width="35" Height="35" Style="{StaticResource BtnNoMax}" 
-                   BorderBrush="Transparent" BorderThickness="1" Background="PaleVioletRed" Click="Delete_Click">
+                   BorderBrush="Transparent" BorderThickness="1" Background="PaleVioletRed" Command="{Binding DeleteGoodOrRecipeCommand}">
                 <Button.Content>
                     <TextBlock FontSize="16" FontFamily="Segoe MDL2 Assets" Text="&#xF8AA;"></TextBlock>
                 </Button.Content>
@@ -62,11 +51,8 @@
                     </ToolTip>
                 </Button.ToolTip>
             </Button>
-            
-            <ContentControl Grid.Row="1" Grid.Column="0" x:Name="AddContentControl">
-
-            </ContentControl>
-            <Frame Grid.Row="1" Grid.Column="1" x:Name="ContentFrame" NavigationUIVisibility="Hidden" Grid.ColumnSpan="2"></Frame>
+        <ContentControl Content="{Binding Ad.CurrentUserControl}" Grid.Row="1" Grid.Column="0" x:Name="AddContentControl"/>
+        <Frame Content="{Binding Ad.CurrentPage}" Grid.Row="1" Grid.Column="1" x:Name="ContentFrame" NavigationUIVisibility="Hidden" Grid.ColumnSpan="2"></Frame>
         </Grid>
 
 </Window>

@@ -1,4 +1,8 @@
-﻿using System;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
+using Matsedeln.Models;
+using Matsedeln.ViewModel;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
@@ -27,7 +31,8 @@ namespace Matsedeln.Usercontrols
         }
         #endregion
 
-        private readonly MainWindow main;
+
+        public AppData Ad { get; } = AppData.Instance;
 
         private bool showingredients = true;
         private bool showshoppinglist;
@@ -61,14 +66,13 @@ namespace Matsedeln.Usercontrols
         public ShoppingListControl()
         {
             InitializeComponent();
-        }
-
-        public ShoppingListControl(MainWindow mainWindow)
-        {
-            InitializeComponent();
-            main = mainWindow;
-            DataContext = mainWindow;
-            mainWindow.ShoppingList = new();
+            DataContext = new ShoppingListViewModel();
+            Ad.ShoppingList = new();
+            WeakReferenceMessenger.Default.Register<FindBorderShopListMessage>(this, (r, m) =>
+            {
+                var foundBorder = FindAllBorders(m.ItemsControl);  // Your logic
+                m.Reply(foundBorder);
+            });
         }
 
         private void MakeShoppinglist_Click(object sender, RoutedEventArgs e)
@@ -77,49 +81,10 @@ namespace Matsedeln.Usercontrols
             ShowShoppinglist = true;
         }
 
-        private void AbortIngredientlist_Click(object sender, RoutedEventArgs e)
-        {
-            main.ShoppingList.Clear();
-            var allBorders = FindAllBorders(main.RecipePageInstance.RecipeItemsControl);
-
-            foreach (var border in allBorders)
-            {
-                border.BorderBrush = Brushes.Transparent;
-            }
-        }
-
-        private void CopyShoppinglist_Click(object sender, RoutedEventArgs e)
-        {
-            string result = "";
-
-            foreach (var item in main.ShoppingList)
-            {
-                result += item.ToString() +"\n";
-            }
-            //CopyList();
-            Clipboard.SetText(string.Join(Environment.NewLine, main.ShoppingList.Select(x => x.ToString())));
-        }
-
-        private void CopyList()
-        {
-            int qmax = main.ShoppingList.Max(x => x.Quantity).ToString().Length;
-            int umax = main.ShoppingList.Max(y => y.Unit.Length);
-            if (qmax == 0 || umax == 0) return;
-            Clipboard.SetText(string.Join(Environment.NewLine, main.ShoppingList.Select(x =>
-            {
-                int qlength = x.Quantity.ToString().Length;
-                int ulength = x.Unit.Length;
-                string quantity = $"{(qlength < qmax ? string.Concat(Enumerable.Repeat(" ", qmax - qlength)) : "")}{x.Quantity}";
-                string unit = $"{x.Unit}{(ulength < umax ? string.Concat(Enumerable.Repeat(" ", umax - ulength)) : "")}";
-                return $"{quantity} {unit} {x.Good.Name}";
-            })));
-
-        }
-
         private void AbortShoppinglist_Click(object sender, RoutedEventArgs e)
         {
-            main.ShoppingList.Clear();
-            var allBorders = FindAllBorders(main.RecipePageInstance.RecipeItemsControl);
+            Ad.ShoppingList.Clear();
+            var allBorders = FindAllBorders(Ad.RecipePageInstance.RecipeItemsControl);
 
             foreach (var border in allBorders)
             {
@@ -149,21 +114,7 @@ namespace Matsedeln.Usercontrols
             }
         }
 
-        private void UnitComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            var comboBox = sender as ComboBox;
-            if (comboBox == null) return;
 
-            var ingredient = comboBox.DataContext as Ingredient;
-            if (ingredient == null) return;
-
-            if (comboBox.SelectedItem == "g") { ingredient.Unit = "g"; ingredient.Quantity = ingredient.QuantityInGram; }
-            else if (comboBox.SelectedItem == "dl") { ingredient.Unit = "dl"; ingredient.Quantity = ingredient.QuantityInDl; }
-            else if (comboBox.SelectedItem == "st") { ingredient.Unit = "st"; ingredient.Quantity = ingredient.QuantityInSt; }
-
-
-
-        }
 
     }
 }

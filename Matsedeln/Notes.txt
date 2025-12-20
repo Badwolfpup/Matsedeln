@@ -34,3 +34,9 @@ Kalendersida
 			Antal äta ute
 
 Lägga till recept till recept
+
+**TODO**
+Fixa recipeusercontrol
+	uppdatera tillagda ingredienser
+	visa border på den good man ändrar
+	nollställa korrekt

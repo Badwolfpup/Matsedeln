@@ -1,5 +1,10 @@
-﻿using Matsedeln;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
+using Matsedeln.Models;
 using Matsedeln.Usercontrols;
+using Matsedeln.Usercontrols;
+using Matsedeln.ViewModel;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -14,7 +19,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using Matsedeln.Usercontrols;
+using static Matsedeln.ViewModel.IngredientPageViewModel;
 
 namespace Matsedeln.Pages
 {
@@ -31,65 +36,59 @@ namespace Matsedeln.Pages
         }
         #endregion
 
-        private readonly MainWindow mainWindow;
 
-        private Border selectedBorder;
-        public Border SelectedBorder
-        {
-            get { return selectedBorder; }
-            set
-            {
-                if (selectedBorder != value)
-                {
-                    selectedBorder = value;
-                    if (mainWindow.EnableAddGoodsBtn && selectedBorder != null && mainWindow.AddContentControl.Content is NewRecipeControl recipeControl)
-                    {
-                        recipeControl.ResetInput();
-                    }
-                    OnPropertyChanged(nameof(SelectedBorder));
-                }
-            }
-        }
+        private Border _selectedBorder;
+        public AppData Ad = AppData.Instance;
 
-        public IngredientPage(MainWindow main)
+        
+
+
+
+
+        public IngredientPage()
         {
             InitializeComponent();
-            mainWindow = main;
-            DataContext = main;
+            DataContext = new IngredientPageViewModel();
+            WeakReferenceMessenger.Default.Register<AppData.SelectedBorderMessage>(this, (r, m) => SelectBorder(m.Border));
+            WeakReferenceMessenger.Default.Register<AppData.MoveBorderMessage>(this, (r, m) => MoveBorder(m.Goods));
+            WeakReferenceMessenger.Default.Register<AppData.ResetBorderMessage>(this, (r, m) => ResetBorderSelection());
         }
 
-        private void Select_Border(object sender, MouseButtonEventArgs e)
+        private void SelectBorder(object sender)
         {
             if (sender is Border border && border.DataContext is Goods good)
             {
-                if (SelectedBorder == null)
+                if (_selectedBorder == null)
                 {
-                    SelectedBorder = border;
-                    SelectedBorder.BorderBrush = Brushes.Red;
+                    _selectedBorder = border;
+                    _selectedBorder.BorderBrush = Brushes.Red;
+                    WeakReferenceMessenger.Default.Send(new AppData.PassGoodsToUCMessage(good));
+
                 }
                 else
                 {
-                    if (border == SelectedBorder)
+                    if (border == _selectedBorder)
                     {
-                        SelectedBorder.BorderBrush = Brushes.Transparent;
-                        SelectedBorder = null;
-                        mainWindow.SelectedGood = null;
-                        return;
+                        _selectedBorder.BorderBrush = Brushes.Transparent;
+                        _selectedBorder = null;
+                        WeakReferenceMessenger.Default.Send(new AppData.PassGoodsToUCMessage(new Goods()));
+
                     }
                     else
                     {
-                        SelectedBorder.BorderBrush = Brushes.Transparent;
-                        SelectedBorder = border;
-                        SelectedBorder.BorderBrush = Brushes.Red;
+                        _selectedBorder.BorderBrush = Brushes.Transparent;
+                        _selectedBorder = border;
+                        _selectedBorder.BorderBrush = Brushes.Red;
+                        WeakReferenceMessenger.Default.Send(new AppData.PassGoodsToUCMessage(good));
+
                     }
                 }
-                if (!mainWindow.EnableAddGoodsBtn) mainWindow.AddContentControl.Content = new NewGoodsControl(mainWindow, good);
-                else mainWindow.SelectedGood = good;
+
 
             }
         }
 
-        public void MoveBorder(Goods goods)
+        private void MoveBorder(Goods goods)
         {
             if (goods == null) return;
 
@@ -102,9 +101,18 @@ namespace Matsedeln.Pages
             var border = FindVisualChild<Border>(container);
             if (border != null)
             {
-                SelectedBorder.BorderBrush = Brushes.Transparent;
-                SelectedBorder = border;
-                SelectedBorder.BorderBrush = Brushes.Red;
+                _selectedBorder.BorderBrush = Brushes.Transparent;
+                _selectedBorder = border;
+                _selectedBorder.BorderBrush = Brushes.Red;
+            }
+        }
+
+        private void ResetBorderSelection()
+        {
+            if (_selectedBorder != null)
+            {
+                _selectedBorder.BorderBrush = Brushes.Transparent;
+                _selectedBorder = null;
             }
         }
 
@@ -122,5 +130,7 @@ namespace Matsedeln.Pages
             }
             return null;
         }
+
+
     }
 }
