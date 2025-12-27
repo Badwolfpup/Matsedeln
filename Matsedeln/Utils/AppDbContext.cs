@@ -17,6 +17,8 @@ namespace Matsedeln.Utils
         public DbSet<Goods> Goods { get; set; }
         public DbSet<Ingredient> Ingredients { get; set; }
 
+        public DbSet<MenuEntry> MenuItems { get; set; }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseSqlServer(connectionString);
@@ -29,6 +31,12 @@ namespace Matsedeln.Utils
                 .WithOne(r => r.ParentRecipe)
                 .HasForeignKey(r => r.ParentRecipeId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Recipe>()
+                .HasMany(r => r.Ingredientlist)
+                .WithOne(i => i.Recipe)
+                .HasForeignKey(i => i.RecipeId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Ingredient>()
                 .HasKey(i => i.Id);
@@ -60,6 +68,18 @@ namespace Matsedeln.Utils
             modelBuilder.Entity<Goods>()
                 .Property(g => g.GramsPerStick)
                 .HasDefaultValue(0);
+
+            modelBuilder.Entity<MenuEntry>()
+                .HasOne(r => r.LunchRecipe)
+                .WithMany()
+                .HasForeignKey(r => r.LunchRecipeId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<MenuEntry>()
+                .HasOne(r => r.DinnerRecipe)
+                .WithMany()
+                .HasForeignKey(r => r.DinnerRecipeId)
+                .OnDelete(DeleteBehavior.NoAction);
         }
     }
 }

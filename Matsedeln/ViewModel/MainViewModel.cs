@@ -55,6 +55,7 @@ namespace Matsedeln
             Ad.CurrentUserControl = new ShoppingListControl();
             Ad.FilterText = string.Empty;
             Ad.IsFilterTextboxEnabled = false;
+            WeakReferenceMessenger.Default.Send(new AppData.RemoveAllHighlightBorderMessage());
         }
 
         [RelayCommand]
@@ -69,6 +70,7 @@ namespace Matsedeln
                 shop.ShowIngredients = false;
                 shop.ShowShoppinglist = false;
             }
+            WeakReferenceMessenger.Default.Send(new AppData.RemoveAllHighlightBorderMessage());
         }
 
         [RelayCommand]
@@ -76,6 +78,7 @@ namespace Matsedeln
         {
             Ad.CurrentPage = Ad.MenuPageInstance;
             Ad.CurrentUserControl = new WeeklyMenuControl();
+            WeakReferenceMessenger.Default.Send(new AppData.RemoveAllHighlightBorderMessage());
         }
 
         [RelayCommand]
@@ -154,12 +157,12 @@ namespace Matsedeln
                     MessageBoxResult result = MessageBox.Show("Vill du verkligen radera detta recept?", "Confirm delettion", MessageBoxButton.YesNo, MessageBoxImage.Question);
                     if (result == MessageBoxResult.Yes)
                     {
-                        //if (!await DBHelper.DeleteRecipeFromDB(SelectedRecipe))
-                        //{
-                        //    MessageBox.Show("Det gick inte att radera varan");
-                        //    return;
-                        //}
-                        //RecipesList.Remove(SelectedRecipe);
+                        if (!await Ad.RecipeService.DeleteRecipe(SelectedRecipe, Ad.RecipesList))
+                        {
+                            MessageBox.Show("Det gick inte att radera receptet");
+                            return;
+                        }
+                        Ad.RecipesList.Remove(SelectedRecipe);
                         ((RecipePageViewModel)Ad.RecipePageInstance.DataContext).RecipesViewSource.View.Refresh();
                     }
                 }

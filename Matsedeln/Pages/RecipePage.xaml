@@ -19,7 +19,7 @@
                 <DataTemplate>
                     <Border BorderBrush="Transparent" BorderThickness="3" Margin="5" Padding="5" CornerRadius="10" MouseDown="Select_Border">
                         <StackPanel>
-                            <Image Width="100" Height="100" Source="{Binding Imagepath}"></Image>
+                            <Image Width="100" Height="100" Source="{Binding ImagePath}"></Image>
                             <TextBlock Text="{Binding Name}" HorizontalAlignment="Center"></TextBlock>
                         </StackPanel>
                     </Border>

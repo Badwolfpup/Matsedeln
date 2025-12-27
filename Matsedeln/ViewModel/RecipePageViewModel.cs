@@ -10,6 +10,7 @@ using System.Collections.ObjectModel;
 using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media;
 
 namespace Matsedeln.ViewModel
 {
@@ -17,6 +18,9 @@ namespace Matsedeln.ViewModel
     {
         public AppData Ad { get; } = AppData.Instance;
         public CollectionViewSource RecipesViewSource { get; set; }
+
+
+
 
         public RecipePageViewModel()
         {
@@ -72,6 +76,8 @@ namespace Matsedeln.ViewModel
                     existingItem.QuantityInSt += ingredient.QuantityInSt;
                     existingItem.QuantityInMsk += ingredient.QuantityInMsk;
                     existingItem.QuantityInTsk += ingredient.QuantityInTsk;
+                    existingItem.Quantity += ingredient.GetQuantity(existingItem);
+                    existingItem.ConvertToOtherUnits(existingItem.Quantity);
                 }
             });
         }
@@ -94,6 +100,8 @@ namespace Matsedeln.ViewModel
                         itemToRemove.QuantityInSt -= ingredient.QuantityInSt;
                         itemToRemove.QuantityInMsk -= ingredient.QuantityInMsk;
                         itemToRemove.QuantityInTsk -= ingredient.QuantityInTsk;
+                        itemToRemove.Quantity -= ingredient.GetQuantity(itemToRemove);
+                        itemToRemove.ConvertToOtherUnits(itemToRemove.Quantity);
                     }
                 }
             });

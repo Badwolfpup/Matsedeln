@@ -60,9 +60,12 @@
                                         </inter:EventTrigger>
                                     </inter:Interaction.Triggers>
                                     <Image Width="50" Height="50" Source="{Binding Good.ImagePath}"></Image>
-                                    <TextBlock Text="{Binding}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Margin="5 0 0 0" Text="{Binding Quantity}"/>
+                                        <TextBlock Margin="5 0 0 0" Text="{Binding Unit}"/>
+                                        <TextBlock Margin="5 0 0 0" Text="{Binding Good.Name}"/>
+                                    </StackPanel>
 
-                                    </TextBlock>
                                     <Button Content="X" Width="30" MinWidth="30" Command="{Binding DataContext.RemoveIngredientCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
                                 </StackPanel>
                             </DataTemplate>

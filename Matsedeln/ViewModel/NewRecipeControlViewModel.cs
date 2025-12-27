@@ -5,6 +5,7 @@ using Matsedeln.Models;
 using Matsedeln.Pages;
 using Matsedeln.Usercontrols;
 using Matsedeln.Utils;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -40,7 +41,9 @@ namespace Matsedeln.ViewModel
         private Ingredient newIngredient;
         [ObservableProperty]
         private string quantity;
-
+        private bool _shouldCopyImage;
+        [ObservableProperty]
+        private bool hasAddedImage;
 
 
         public NewRecipeControlViewModel()
@@ -49,16 +52,33 @@ namespace Matsedeln.ViewModel
             NewIngredient = new Ingredient();
             RecipeImage = new BitmapImage(new Uri(NewRecipe.ImagePath));
             isAddingNewIngredient = true;
-            WeakReferenceMessenger.Default.Register<AppData.PassGoodsToUCMessage>(this, (r, m) => { NewIngredient.Good = m.good; NewIngredient.AddUnitOptions(); });
+            WeakReferenceMessenger.Default.Register<AppData.PassGoodsToUCMessage>(this, (r, m) => PassGoodsToUC(m.good));
             WeakReferenceMessenger.Default.Register<AppData.PasteImageMessage>(this, (r, m) => OnPasteExecuted());
+            WeakReferenceMessenger.Default.Register<AppData.IsGoodAddedToIngredientMessage>(this, (r, m) => IsGoodAddedToIngredient(m.Goods));
+        }
+        
+        private void IsGoodAddedToIngredient(Goods good)
+        {
+            if (!NewRecipe.Ingredientlist.Any(x => x.Good.Id == good.Id))
+            {
+                WeakReferenceMessenger.Default.Send(new AppData.RemoveHighlightBorderMessage(good));
+            }
         }
 
+        private void PassGoodsToUC(Goods good)
+        {
+            NewIngredient = new Ingredient();
+            ResetInput();
+            NewIngredient.Good = good;
+            NewIngredient.Unit = "g";
+            NewIngredient.AddUnitOptions();
+        }
 
         [RelayCommand]
         private void ShowAddGoodsUserControl()
         {
             Ad.CurrentUserControl = new NewGoodsControl();
-            WeakReferenceMessenger.Default.Send(new AppData.ResetBorderMessage());
+            WeakReferenceMessenger.Default.Send(new AppData.RemoveAllHighlightBorderMessage());
         }
 
         [RelayCommand]
@@ -84,12 +104,12 @@ namespace Matsedeln.ViewModel
             {
                 NewRecipe.Ingredientlist.Add(NewIngredient);
                 NewIngredient = new Ingredient();
-                
+                ResetInput();
             }
             else
             {
                 NewIngredient = new Ingredient();
-                ResetInput();
+                //ResetInput();
             }
         }
 
@@ -106,21 +126,21 @@ namespace Matsedeln.ViewModel
                 MessageBox.Show("Lägg till minst två ingredienser i receptet.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            //if (await DBHelper.AddRecipeToDB(NewRecipe))
-            //{
-            //    if (hasAddedImage) KopieraBild();
-            //    IngredientName.Text = "";
-            //    ResetInput();
-            //    BindadBild.Source = new BitmapImage(new Uri("pack://application:,,,/Images/dummybild.png"));
-            //    NewRecipe = new Recipe("");
-            //    RecipeName = "";
-            //    Ad.SelectedGood = null;
-            //}
-            //else
-            //{
-            //    MessageBox.Show("Något gick fel vid tillägget av receptet i databasen.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
+            if (await Ad.RecipeService.AddRecipe(NewRecipe, Ad.RecipesList))
+            {
+                if(_shouldCopyImage) KopieraBild();
+                
+                ResetInput();
+                NewRecipe = new Recipe("");
+                RecipeImage = new BitmapImage(new Uri(NewRecipe.ImagePath));
+                RecipeName = "";
+                WeakReferenceMessenger.Default.Send(new AppData.RemoveAllHighlightBorderMessage());
+            }
+            else
+            {
+                MessageBox.Show("Något gick fel vid tillägget av receptet i databasen.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
 
-            //}
+            }
         }
 
 
@@ -129,16 +149,16 @@ namespace Matsedeln.ViewModel
         [RelayCommand]
         private void RemoveIngredient(Ingredient ingredient)
         {
-            if (ingredient != null) NewRecipe.Ingredientlist.Remove(ingredient);
+            if (ingredient == null)  return;
+            NewRecipe.Ingredientlist.Remove(ingredient);
+            WeakReferenceMessenger.Default.Send(new AppData.RemoveHighlightBorderMessage(ingredient.Good));
         }
 
         [RelayCommand]
         private void SelectIngredient(Ingredient ingredient)
         {
             IsAddingNewIngredient = false;
-            NewIngredient.Good = ingredient.Good;
-            NewIngredient.AddUnitOptions();
-            WeakReferenceMessenger.Default.Send(new AppData.MoveBorderMessage(ingredient.Good));
+            NewIngredient = ingredient;
             Quantity = ingredient.Quantity.ToString();
         }
 
@@ -157,13 +177,17 @@ namespace Matsedeln.ViewModel
         {
             Quantity = "";
             IsAddingNewIngredient = true;
-            WeakReferenceMessenger.Default.Send(new AppData.ResetBorderMessage());
         }
 
         partial void OnRecipeNameChanged(string value)
         {
-            ShowRest = !string.IsNullOrEmpty(value);
+            ShowRest = !string.IsNullOrEmpty(value) && HasAddedImage;
             NewRecipe.Name = RecipeName;
+        }
+
+        partial void OnHasAddedImageChanged(bool value)
+        {
+            ShowRest = !string.IsNullOrEmpty(RecipeName) && HasAddedImage;
         }
 
         partial void OnQuantityChanged(string value)
@@ -182,7 +206,7 @@ namespace Matsedeln.ViewModel
         private string fileextension; //Håller koll på filändelsen på bilden.
 
         private bool skaKopieraBild { get; set; } //Styr om bilden ska kopieras eller inte.
-        private bool hasAddedImage { get; set; }
+        
         private bool hasExtension { get; set; }
         private BitmapImage tempBild { get; set; } = new BitmapImage();
 
@@ -210,8 +234,9 @@ namespace Matsedeln.ViewModel
                         bitmapImage.StreamSource = memoryStream;
                         bitmapImage.EndInit();
                         tempBild = bitmapImage;
-                        RecipeImage =bitmapImage;
-                        hasAddedImage = true;
+                        RecipeImage = bitmapImage;
+                        HasAddedImage = true;
+                        _shouldCopyImage = true;
                         hasExtension = false;
                         AddImagePathToRecipe();
                     }
@@ -223,7 +248,7 @@ namespace Matsedeln.ViewModel
         {
             OpenFileDialog open = new OpenFileDialog()
             {
-                InitialDirectory = AppDomain.CurrentDomain.BaseDirectory + @"Bilder\"
+                InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Bilder")
             };
             open.Multiselect = false;
             if (open.ShowDialog() == true)
@@ -238,12 +263,14 @@ namespace Matsedeln.ViewModel
                     img.BeginInit();
                     img.UriSource = new Uri(filgenväg);
                     img.EndInit();
-                    NewRecipe.ImagePath = filgenväg;
-                    tempBild = img;
                     RecipeImage = img;
-                    hasAddedImage = true;
+                    string basePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Bilder");
+                    _shouldCopyImage = open.FileName.StartsWith(basePath) ? false : true;
+
+                    HasAddedImage = true;
                     hasExtension = true;
-                    AddImagePathToRecipe();
+                    if (_shouldCopyImage) AddImagePathToRecipe();
+                    else NewRecipe.ImagePath = filgenväg;
                 }
             }
         }
@@ -251,7 +278,7 @@ namespace Matsedeln.ViewModel
         private void AddImagePathToRecipe()
         {
             string _folderpath = AppDomain.CurrentDomain.BaseDirectory;
-            string bildfolder = _folderpath + @"\Bilder\";
+            string bildfolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Bilder");
             if (!Directory.Exists(bildfolder)) Directory.CreateDirectory(bildfolder);
 
             string filePath = System.IO.Path.Combine(bildfolder, Guid.NewGuid().ToString() + (hasExtension ? fileextension : ".png"));

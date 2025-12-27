@@ -36,7 +36,4 @@ Kalendersida
 Lägga till recept till recept
 
 **TODO**
-Fixa recipeusercontrol
-	uppdatera tillagda ingredienser
-	visa border på den good man ändrar
-	nollställa korrekt
+Testa att det funkar att lägga till recept från receptlistan till veckoplaneringen och att det sparas i DB

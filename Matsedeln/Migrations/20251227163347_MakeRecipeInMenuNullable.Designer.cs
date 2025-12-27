@@ -4,6 +4,7 @@ using Matsedeln.Utils;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Matsedeln.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251227163347_MakeRecipeInMenuNullable")]
+    partial class MakeRecipeInMenuNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -102,17 +105,12 @@ namespace Matsedeln.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("DinnerRecipeId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("LunchRecipeId")
+                    b.Property<int?>("RecipeId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DinnerRecipeId");
-
-                    b.HasIndex("LunchRecipeId");
+                    b.HasIndex("RecipeId");
 
                     b.ToTable("MenuItems");
                 });
@@ -167,19 +165,12 @@ namespace Matsedeln.Migrations
 
             modelBuilder.Entity("Matsedeln.Models.MenuEntry", b =>
                 {
-                    b.HasOne("Matsedeln.Models.Recipe", "DinnerRecipe")
+                    b.HasOne("Matsedeln.Models.Recipe", "Recipe")
                         .WithMany()
-                        .HasForeignKey("DinnerRecipeId")
-                        .OnDelete(DeleteBehavior.NoAction);
+                        .HasForeignKey("RecipeId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("Matsedeln.Models.Recipe", "LunchRecipe")
-                        .WithMany()
-                        .HasForeignKey("LunchRecipeId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.Navigation("DinnerRecipe");
-
-                    b.Navigation("LunchRecipe");
+                    b.Navigation("Recipe");
                 });
 
             modelBuilder.Entity("Matsedeln.Models.Recipe", b =>

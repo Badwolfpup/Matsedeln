@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -32,7 +33,7 @@ namespace Matsedeln
         public ObservableCollection<Goods> GoodsList { get; set; } = new ObservableCollection<Goods>();
         public ObservableCollection<Recipe> RecipesList { get; set; } = new ObservableCollection<Recipe>();
         public ObservableCollection<Ingredient> ShoppingList { get; set; } = new ObservableCollection<Ingredient>();
-        public ObservableCollection<MenuItem> MenuList { get; set; } = new ObservableCollection<MenuItem>();
+        public ObservableCollection<MenuEntry> MenuList { get; set; } = new ObservableCollection<MenuEntry>();
         
         private IngredientPage _ingredientPageInstance;
         public IngredientPage IngredientPageInstance => _ingredientPageInstance ??= new IngredientPage();
@@ -45,6 +46,10 @@ namespace Matsedeln
 
         public GoodsService GoodsService { get; } = new GoodsService();
 
+        public RecipeService RecipeService { get; } = new RecipeService();
+
+        public MenuService MenuService { get; } = new MenuService();
+
         [ObservableProperty]
         private bool isFilterTextboxEnabled = true;
         [ObservableProperty]
@@ -54,10 +59,12 @@ namespace Matsedeln
 
 
         #region Messenger records
-        public record SelectedBorderMessage(Border Border);
+        public record SelectedBorderMessage(Border Border, bool GoodsOrRecipe);
         public record MoveBorderMessage(Goods Goods);
 
-
+        public record RemoveHighlightBorderMessage(Goods Goods);
+        public record RemoveAllHighlightBorderMessage();
+        public record IsGoodAddedToIngredientMessage(Goods Goods);
         public record RefreshCollectionViewMessage();
 
         public record ResetBorderMessage();
@@ -69,6 +76,7 @@ namespace Matsedeln
 
         public record AddIngredientShopListMessage(Recipe recipe);
 
+        public record ShowShoppingListMessage();
         public record PassGoodsToUCMessage(Goods good);
 
         public record PasteImageMessage();
@@ -82,8 +90,9 @@ namespace Matsedeln
             {
                 GoodsList = await GoodsService.GetGoods();
 
-                //RecipesList = await DBHelper.GetAllRecipesFromDB(GoodsList);
+                RecipesList = await RecipeService.GetRecipes();
 
+                MenuList = await MenuService.GetMenuItems();
             }
             catch (Exception ex)
             {

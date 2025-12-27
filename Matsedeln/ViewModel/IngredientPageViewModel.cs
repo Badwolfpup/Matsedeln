@@ -55,7 +55,8 @@ namespace Matsedeln.ViewModel
         [RelayCommand]
         private void SelectBorder(Border border)
         {
-            WeakReferenceMessenger.Default.Send(new AppData.SelectedBorderMessage(border));
+            var isGoodsUC = Ad.CurrentUserControl is NewGoodsControl;
+            WeakReferenceMessenger.Default.Send(new AppData.SelectedBorderMessage(border, isGoodsUC));
 
         }
 

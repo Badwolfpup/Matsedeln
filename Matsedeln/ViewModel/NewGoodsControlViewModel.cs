@@ -7,6 +7,7 @@ using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Printing;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -40,8 +41,7 @@ namespace Matsedeln.ViewModel
         [ObservableProperty]
         private bool isGperSTEnabled = false;
         private bool IsNewGood => !Ad.GoodsList.Any(g => g.Id == NewGood.Id);
-
-
+        private bool _shouldCopyImage;
 
         public NewGoodsControlViewModel()
         {
@@ -66,7 +66,7 @@ namespace Matsedeln.ViewModel
         private void ShowAddRecipeUserControl()
         {
             Ad.CurrentUserControl = new NewRecipeControl();
-            WeakReferenceMessenger.Default.Send(new AppData.ResetBorderMessage());
+            WeakReferenceMessenger.Default.Send(new AppData.RemoveAllHighlightBorderMessage());
         }
 
         [RelayCommand]
@@ -108,7 +108,7 @@ namespace Matsedeln.ViewModel
             if (IsNewGood)
             {
                 var result = await Ad.GoodsService.AddGoods(NewGood, Ad.GoodsList);
-                if (result && hasAddedImage)
+                if (result && _shouldCopyImage)
                 {
                     KopieraBild();
                     GoodsImage = new BitmapImage(new Uri(NewGood.ImagePath));
@@ -164,6 +164,7 @@ namespace Matsedeln.ViewModel
                         tempBild = bitmapImage;
                         GoodsImage = bitmapImage;
                         hasAddedImage = true;
+                        _shouldCopyImage = true;
                         hasExtension = false;
                         AddImagePathToGood();
                     }
@@ -177,7 +178,7 @@ namespace Matsedeln.ViewModel
             if (!IsNewGood) return;
             OpenFileDialog open = new OpenFileDialog()
             {
-                InitialDirectory = AppDomain.CurrentDomain.BaseDirectory + @"Bilder\"
+                InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Bilder")
             };
             open.Multiselect = false;
             if (open.ShowDialog() == true)
@@ -194,9 +195,12 @@ namespace Matsedeln.ViewModel
                     img.EndInit();
                     tempBild = img;
                     GoodsImage = img;
+                    string basePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Bilder");
+                    _shouldCopyImage = open.FileName.StartsWith(basePath) ? false : true;
                     hasAddedImage = true;
                     hasExtension = true;
-                    AddImagePathToGood();
+                    if (_shouldCopyImage) AddImagePathToGood();
+                    else NewGood.ImagePath = filgenväg;
                 }
             }
         }
@@ -204,7 +208,7 @@ namespace Matsedeln.ViewModel
         private void AddImagePathToGood()
         {
             string _folderpath = AppDomain.CurrentDomain.BaseDirectory;
-            string bildfolder = _folderpath + @"\Bilder\";
+            string bildfolder = Path.Combine(_folderpath, "Bilder");
             if (!Directory.Exists(bildfolder)) Directory.CreateDirectory(bildfolder);
 
             string filePath = System.IO.Path.Combine(bildfolder, Guid.NewGuid().ToString() + (hasExtension ? fileextension : ".png"));

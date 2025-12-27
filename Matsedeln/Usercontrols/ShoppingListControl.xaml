@@ -24,7 +24,7 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
-                                <Image Width="50" Height="50" Source="{Binding Good.Imagepath}"></Image>
+                                <Image Width="50" Height="50" Source="{Binding Good.ImagePath}"></Image>
                                 <TextBlock Text="{Binding QuantityInGram}" Margin="0 0 5 0"/>
                                 <TextBlock Text="{Binding Unit}" Margin="0 0 5 0"/>
                                 <TextBlock Text="{Binding Good.Name}" Margin="0 0 5 0"/>
@@ -44,12 +44,12 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
-                                <Image Width="50" Height="50" Source="{Binding Good.Imagepath}"></Image>
+                                <Image Width="50" Height="50" Source="{Binding Good.ImagePath}"></Image>
                                 <TextBlock Text="{Binding Quantity}" Margin="0 0 10 0"/>
-                                <ComboBox x:Name="UnitComboBox" ItemsSource="{Binding UnitOptions}" SelectedValue="{Binding Unit}" SelectedValuePath="PropertyName" Height="40" SelectedIndex="0" Width="40" HorizontalAlignment="Left">
+                                <ComboBox x:Name="UnitComboBox" ItemsSource="{Binding UnitOptions}" SelectedItem="{Binding Unit}" Height="40" Width="40" HorizontalAlignment="Left">
                                     <inter:Interaction.Triggers>
                                         <inter:EventTrigger EventName="SelectionChanged">
-                                            <inter:InvokeCommandAction Command="{Binding DataContext.UnitComboBoxCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" />
+                                            <inter:InvokeCommandAction Command="{Binding DataContext.UnitComboBoxCommand, RelativeSource={RelativeSource AncestorType=ItemsControl, AncestorLevel=2}}" CommandParameter="{Binding}" />
                                         </inter:EventTrigger>
                                     </inter:Interaction.Triggers>
                                 </ComboBox>

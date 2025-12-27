@@ -33,7 +33,6 @@ namespace Matsedeln.Models
 
         private int gramsperdeciliter;
         private int gramsperstick;
-        private int id;
 
         [Required]
         public string Name
@@ -62,19 +61,9 @@ namespace Matsedeln.Models
                 }
             }
         }
+        [Key]
+        public int Id { get; set; }
 
-        public int Id
-        {
-            get { return id; }
-            set
-            {
-                if (id != value)
-                {
-                    id = value;
-                    OnPropertyChanged(nameof(Id));
-                }
-            }
-        }
 
         public int GramsPerDeciliter
         {

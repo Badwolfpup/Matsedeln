@@ -19,6 +19,7 @@ namespace Matsedeln.ViewModel
 
         public ShoppingListViewModel()
         {
+            
         }
 
 
@@ -29,7 +30,7 @@ namespace Matsedeln.ViewModel
             var request = new FindBorderShopListMessage(Ad.RecipePageInstance.RecipeItemsControl);
             var response = WeakReferenceMessenger.Default.Send(request);
             var allBorders = response.Response;
-
+            WeakReferenceMessenger.Default.Send(new AppData.ShowShoppingListMessage());
             foreach (var item in allBorders)
             {
                 if (item is Border border)  border.BorderBrush = System.Windows.Media.Brushes.Transparent;

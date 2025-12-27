@@ -34,7 +34,6 @@ namespace Matsedeln.Models
                 if (unit != value)
                 {
                     unit = value;
-                    
                     OnPropertyChanged(nameof(Unit));
                 }
             }
@@ -50,6 +49,8 @@ namespace Matsedeln.Models
                 if (quantity != value)
                 {
                     quantity = value;
+                    //GetQuantityInGram(quantity);
+                    //ConvertToOtherUnits(QuantityInGram);
                     OnPropertyChanged(nameof(Quantity));
                 }
             }
@@ -156,7 +157,6 @@ namespace Matsedeln.Models
         public  ObservableCollection<string> UnitOptions { get; set; }
 
 
-
         public Ingredient()
         {
             UnitOptions = new ObservableCollection<string>();
@@ -171,7 +171,7 @@ namespace Matsedeln.Models
             GetQuantityInGram(copy.Quantity);
             ConvertToOtherUnits(this.QuantityInGram);
             AddUnitOptions();
-            this.Quantity = copy.QuantityInGram;
+            this.Quantity = QuantityInGram;
             this.Unit = "g";
 
         }
@@ -187,7 +187,9 @@ namespace Matsedeln.Models
                 UnitOptions.Add("msk");
             }
             if (Good.GramsPerStick != 0) UnitOptions.Add("st");
-            Unit = "g";
+
+            //Remove of adds unintended value
+            if (!UnitOptions.Contains(Unit)) Unit = "g";
         }
 
         public void ConvertToOtherUnits(int q)
@@ -239,5 +241,23 @@ namespace Matsedeln.Models
             return $"{Quantity} {Unit} {Good.Name}";
         }
 
+        public int GetQuantity(Ingredient ingredient)
+        {
+            switch (ingredient.Unit)
+            {
+                case "g":
+                    return QuantityInGram;
+                case "dl":
+                    return QuantityInDl;
+                case "st":
+                    return QuantityInSt;
+                case "msk":
+                    return QuantityInMsk;
+                case "tsk":
+                    return QuantityInTsk;
+                default:
+                    return QuantityInGram;
+            }
+        }
     }
 }

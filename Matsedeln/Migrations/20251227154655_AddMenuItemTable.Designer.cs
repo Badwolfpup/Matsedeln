@@ -4,6 +4,7 @@ using Matsedeln.Utils;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Matsedeln.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251227154655_AddMenuItemTable")]
+    partial class AddMenuItemTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,6 +24,27 @@ namespace Matsedeln.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("Matsedeln.MenuItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RecipeId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecipeId");
+
+                    b.ToTable("MenuItem");
+                });
 
             modelBuilder.Entity("Matsedeln.Models.Goods", b =>
                 {
@@ -91,32 +115,6 @@ namespace Matsedeln.Migrations
                     b.ToTable("Ingredients");
                 });
 
-            modelBuilder.Entity("Matsedeln.Models.MenuEntry", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("DinnerRecipeId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("LunchRecipeId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DinnerRecipeId");
-
-                    b.HasIndex("LunchRecipeId");
-
-                    b.ToTable("MenuItems");
-                });
-
             modelBuilder.Entity("Matsedeln.Models.Recipe", b =>
                 {
                     b.Property<int>("Id")
@@ -126,6 +124,7 @@ namespace Matsedeln.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ImagePath")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
@@ -140,6 +139,17 @@ namespace Matsedeln.Migrations
                     b.HasIndex("ParentRecipeId");
 
                     b.ToTable("Recipes");
+                });
+
+            modelBuilder.Entity("Matsedeln.MenuItem", b =>
+                {
+                    b.HasOne("Matsedeln.Models.Recipe", "Recipe")
+                        .WithMany()
+                        .HasForeignKey("RecipeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Recipe");
                 });
 
             modelBuilder.Entity("Matsedeln.Models.Ingredient", b =>
@@ -163,23 +173,6 @@ namespace Matsedeln.Migrations
                     b.Navigation("Good");
 
                     b.Navigation("Recipe");
-                });
-
-            modelBuilder.Entity("Matsedeln.Models.MenuEntry", b =>
-                {
-                    b.HasOne("Matsedeln.Models.Recipe", "DinnerRecipe")
-                        .WithMany()
-                        .HasForeignKey("DinnerRecipeId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Matsedeln.Models.Recipe", "LunchRecipe")
-                        .WithMany()
-                        .HasForeignKey("LunchRecipeId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.Navigation("DinnerRecipe");
-
-                    b.Navigation("LunchRecipe");
                 });
 
             modelBuilder.Entity("Matsedeln.Models.Recipe", b =>

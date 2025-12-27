@@ -49,42 +49,97 @@ namespace Matsedeln.Pages
         {
             InitializeComponent();
             DataContext = new IngredientPageViewModel();
-            WeakReferenceMessenger.Default.Register<AppData.SelectedBorderMessage>(this, (r, m) => SelectBorder(m.Border));
+            WeakReferenceMessenger.Default.Register<AppData.SelectedBorderMessage>(this, (r, m) => SelectBorder(m.Border, m.GoodsOrRecipe));
             WeakReferenceMessenger.Default.Register<AppData.MoveBorderMessage>(this, (r, m) => MoveBorder(m.Goods));
             WeakReferenceMessenger.Default.Register<AppData.ResetBorderMessage>(this, (r, m) => ResetBorderSelection());
+            WeakReferenceMessenger.Default.Register<AppData.RemoveHighlightBorderMessage>(this, (r, m) => RemoveHighlightBorder(m.Goods));
+            WeakReferenceMessenger.Default.Register<AppData.RemoveAllHighlightBorderMessage>(this, (r, m) => RemoveAllHighlightBorder(Ad.GoodsList));
         }
 
-        private void SelectBorder(object sender)
+        private void SelectBorder(Border border, bool isGoodsUC)
         {
-            if (sender is Border border && border.DataContext is Goods good)
+            
+            if (border.DataContext is Goods good && good != null)
             {
-                if (_selectedBorder == null)
+                if (isGoodsUC)
                 {
-                    _selectedBorder = border;
-                    _selectedBorder.BorderBrush = Brushes.Red;
-                    WeakReferenceMessenger.Default.Send(new AppData.PassGoodsToUCMessage(good));
-
-                }
-                else
-                {
-                    if (border == _selectedBorder)
+                    if (_selectedBorder == null)
                     {
-                        _selectedBorder.BorderBrush = Brushes.Transparent;
-                        _selectedBorder = null;
-                        WeakReferenceMessenger.Default.Send(new AppData.PassGoodsToUCMessage(new Goods()));
-
-                    }
-                    else
-                    {
-                        _selectedBorder.BorderBrush = Brushes.Transparent;
                         _selectedBorder = border;
                         _selectedBorder.BorderBrush = Brushes.Red;
                         WeakReferenceMessenger.Default.Send(new AppData.PassGoodsToUCMessage(good));
 
                     }
+                    else
+                    {
+                        if (border == _selectedBorder)
+                        {
+                            _selectedBorder.BorderBrush = Brushes.Transparent;
+                            _selectedBorder = null;
+                            WeakReferenceMessenger.Default.Send(new AppData.PassGoodsToUCMessage(new Goods()));
+
+                        }
+                        else
+                        {
+                            _selectedBorder.BorderBrush = Brushes.Transparent;
+                            _selectedBorder = border;
+                            _selectedBorder.BorderBrush = Brushes.Red;
+                            WeakReferenceMessenger.Default.Send(new AppData.PassGoodsToUCMessage(good));
+
+                        }
+                    }
+                } 
+                else
+                {
+                    if (border.BorderBrush != Brushes.Red)
+                    {
+                        Goods oldgood = null;
+
+                        if (_selectedBorder != null) oldgood = _selectedBorder.DataContext as Goods;
+                        if (oldgood != null) WeakReferenceMessenger.Default.Send(new AppData.IsGoodAddedToIngredientMessage(oldgood));
+                        _selectedBorder = border;
+                        border.BorderBrush = Brushes.Red;
+                        WeakReferenceMessenger.Default.Send(new AppData.PassGoodsToUCMessage(good));
+                    }
                 }
 
 
+            }
+        }
+
+        private void RemoveHighlightBorder(Goods goods)
+        {
+            if (goods == null) return;
+
+
+            // Get the visual container for this item
+            var container = GoodsItemsControl.ItemContainerGenerator.ContainerFromItem(goods) as FrameworkElement;
+            if (container == null) return;  // Item not generated yet (e.g., virtualized)
+
+            // Traverse the visual tree to find the Border (adjust based on your template structure)
+            var border = FindVisualChild<Border>(container);
+            if (border != null)
+            {
+                border.BorderBrush = Brushes.Transparent;
+            }
+        }
+
+        private void RemoveAllHighlightBorder(ObservableCollection<Goods> goods)
+        {
+            if (goods == null) return;
+
+            foreach (var item in goods)
+            {
+                // Get the visual container for this item
+                var container = GoodsItemsControl.ItemContainerGenerator.ContainerFromItem(item) as FrameworkElement;
+                if (container == null) return;  // Item not generated yet (e.g., virtualized)
+
+                // Traverse the visual tree to find the Border (adjust based on your template structure)
+                var border = FindVisualChild<Border>(container);
+                if (border != null)
+                {
+                    border.BorderBrush = Brushes.Transparent;
+                }
             }
         }
 

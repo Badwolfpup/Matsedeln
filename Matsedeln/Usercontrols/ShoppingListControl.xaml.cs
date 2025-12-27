@@ -73,6 +73,12 @@ namespace Matsedeln.Usercontrols
                 var foundBorder = FindAllBorders(m.ItemsControl);  // Your logic
                 m.Reply(foundBorder);
             });
+            WeakReferenceMessenger.Default.Register<AppData.ShowShoppingListMessage>(this, (r, m) => {
+                ShowShoppinglist = false;
+                ShowIngredients = true;
+            });
+
+
         }
 
         private void MakeShoppinglist_Click(object sender, RoutedEventArgs e)

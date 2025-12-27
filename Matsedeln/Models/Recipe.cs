@@ -30,9 +30,16 @@ namespace Matsedeln.Models
             ingredientlist = new ObservableCollection<Ingredient>();
         }
 
+        public Recipe(Recipe recipe)
+        {
+            this.name = recipe.Name;
+            this.Id = recipe.Id;
+            this.imagePath = recipe.ImagePath;
+            this.ingredientlist = new ObservableCollection<Ingredient>(recipe.Ingredientlist);
+        }
+
         private string name;
         private string imagePath = "pack://application:,,,/Images/dummybild.png";
-        private int id;
 
         private ICollection<Ingredient> ingredientlist;
         [Required]
@@ -49,22 +56,14 @@ namespace Matsedeln.Models
             }
         }
 
-        public int Id
-        {
-            get { return id; }
-            set
-            {
-                if (id != value)
-                {
-                    id = value;
-                    OnPropertyChanged(nameof(Id));
-                }
-            }
-        }
+        [Key]
+        public int Id { get; set; }
+
 
         public int? ParentRecipeId { get; set; }  // FK for self-ref
         public Recipe? ParentRecipe { get; set; }  // Nav prop
         public ICollection<Recipe> ChildRecipes { get; set; } = new List<Recipe>();  // Reverse nav
+
 
         [NotMapped]
         public ICollection<Ingredient> Ingredientlist
