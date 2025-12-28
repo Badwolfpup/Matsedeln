@@ -10,6 +10,7 @@
              d:DesignHeight="450" d:DesignWidth="650">
     <UserControl.Resources>
         <local:MergeValuesConverter x:Key="MultiValueConverter"></local:MergeValuesConverter>
+        <local:FindSelectedRecipeConverter x:Key="FindSelectedRecipeConverter"></local:FindSelectedRecipeConverter>
     </UserControl.Resources>
     <Grid Background="#FFFDFDFD">
         
@@ -25,7 +26,7 @@
 
                 <Button Grid.Column="2" Content="&gt;" Style="{StaticResource BtnNoMax}" Width="30" Command="{Binding NextWeekCommand}"></Button>
             </Grid>
-            <ItemsControl Margin="0 20 0 0" ItemsSource="{Binding MenuListSource.View}">
+            <ItemsControl Margin="0 20 0 0" ItemsSource="{Binding Ad.MenuList}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <StackPanel>
@@ -35,64 +36,41 @@
                                     <RowDefinition Height="*"></RowDefinition>
                                     <RowDefinition Height="*"></RowDefinition>
                                 </Grid.RowDefinitions>
-                                <Grid Grid.Row="0" Background="PaleGoldenrod">
+                                <Grid Height="50" Grid.Row="0" Background="PaleGoldenrod">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"></ColumnDefinition>
                                         <ColumnDefinition Width="4*"></ColumnDefinition>
+                                        <ColumnDefinition Width="*"></ColumnDefinition>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="Lunch" HorizontalAlignment="Right" Grid.Column="0"/>
-                                    <ComboBox Margin="5" Grid.Column="1" SelectedIndex="0" SelectedItem="{Binding LunchRecipe, Mode=TwoWay}" ItemsSource="{Binding DataContext.LocalList, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
-                                        <inter:Interaction.Triggers>
-                                            <inter:EventTrigger EventName="SelectionChanged">
-                                                <inter:InvokeCommandAction Command="{Binding DataContext.LunchSelectionChangedCommand, RelativeSource={RelativeSource AncestorType=ItemsControl, AncestorLevel=2}}">
-                                                    <inter:InvokeCommandAction.CommandParameter>
-                                                        <MultiBinding Converter="{StaticResource MultiValueConverter}">
-                                                            <Binding Path="."/>
-                                                            <Binding Path="SelectedItem" RelativeSource="{RelativeSource AncestorType=ComboBox}"/>
-                                                        </MultiBinding>
-                                                    </inter:InvokeCommandAction.CommandParameter>
-                                                </inter:InvokeCommandAction>
-                                            </inter:EventTrigger>
-                                        </inter:Interaction.Triggers>
+                                    <Button Grid.Column="1" Foreground="Black" Command="{Binding DataContext.LunchChangedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                        <Button.Content>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Image Margin="0 0 10 0" Width="30" Height="30" Stretch="Fill" Source="{Binding LunchRecipe.ImagePath}"></Image>
+                                                <TextBlock Text="{Binding LunchRecipe.Name}"/>
+                                            </StackPanel>
+                                        </Button.Content>
+                                    </Button>
+                                    <Button Grid.Column="2" Content="X" Width="30" MinWidth="15" Command="{Binding DataContext.RemoveLunchCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"/>
 
-                                        <ComboBox.ItemTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <Image Width="50" Height="50" Source="{Binding ImagePath}"></Image>
-                                                    <TextBlock Text="{Binding Name}"/>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </ComboBox.ItemTemplate>
-                                    </ComboBox>
                                 </Grid>
-                                <Grid Grid.Row="1" Background="LightCoral">
+                                <Grid Height="50" Grid.Row="1" Background="LightCoral">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"></ColumnDefinition>
                                         <ColumnDefinition Width="4*"></ColumnDefinition>
+                                        <ColumnDefinition Width="*"></ColumnDefinition>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock  Text="Middag" HorizontalAlignment="Right" Grid.Column="0"/>
-                                    <ComboBox Margin="5" Grid.Column="1" SelectedIndex="0" SelectedItem="{Binding DinnerRecipe, Mode=TwoWay}" ItemsSource="{Binding DataContext.LocalList, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
-                                        <inter:Interaction.Triggers>
-                                            <inter:EventTrigger EventName="SelectionChanged">
-                                                <inter:InvokeCommandAction Command="{Binding DataContext.DinnerSelectionChangedCommand, RelativeSource={RelativeSource AncestorType=ItemsControl, AncestorLevel=2}}">
-                                                    <inter:InvokeCommandAction.CommandParameter>
-                                                        <MultiBinding Converter="{StaticResource MultiValueConverter}">
-                                                            <Binding Path="."/>
-                                                            <Binding Path="SelectedItem" RelativeSource="{RelativeSource AncestorType=ComboBox}"/>
-                                                        </MultiBinding>
-                                                    </inter:InvokeCommandAction.CommandParameter>
-                                                </inter:InvokeCommandAction>
-                                            </inter:EventTrigger>
-                                        </inter:Interaction.Triggers>
-                                        <ComboBox.ItemTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <Image Width="50" Height="50" Source="{Binding ImagePath}"></Image>
-                                                    <TextBlock Text="{Binding Name}"/>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </ComboBox.ItemTemplate>
-                                    </ComboBox>
+                                    <Button Grid.Column="1" Foreground="Black" Command="{Binding DataContext.DinnerChangedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                        <Button.Content>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Image Margin="0 0 10 0" Width="30" Height="30" Stretch="Fill" Source="{Binding DinnerRecipe.ImagePath}"></Image>
+                                                <TextBlock Text="{Binding DinnerRecipe.Name}"/>
+                                            </StackPanel>
+                                        </Button.Content>
+                                    </Button>
+                                    <Button Grid.Column="2" Content="X" Width="30" MinWidth="15" Command="{Binding DataContext.RemoveDinnerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"/>
+
                                 </Grid>
                             </Grid>
                         </StackPanel>

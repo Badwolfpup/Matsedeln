@@ -86,6 +86,15 @@ namespace Matsedeln.Utils
             {
                 using (var context = new AppDbContext())
                 {
+                    var menuItems = context.MenuItems.Where(m => m.LunchRecipeId == recipe.Id || m.DinnerRecipeId == recipe.Id);
+
+                    foreach (var item in menuItems)
+                    {
+                        if (item.LunchRecipeId == recipe.Id) item.LunchRecipeId = null;
+                        if (item.DinnerRecipeId == recipe.Id) item.DinnerRecipeId = null;
+                    }
+                    await context.SaveChangesAsync();
+                    
                     context.Recipes.Remove(recipe);
                     await context.SaveChangesAsync();
                 }

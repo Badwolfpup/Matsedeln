@@ -10,6 +10,7 @@ namespace Matsedeln.Utils
 {
     public class MenuService
     {
+        //public AppData Ad { get; } = AppData.Instance;
         public async Task<ObservableCollection<MenuEntry>> GetMenuItems()
         {
             try
@@ -104,11 +105,14 @@ namespace Matsedeln.Utils
             {
                 using (var context = new AppDbContext())
                 {
-                    if (menuEntry.LunchRecipeId == 0)
-                    {
-                        menuEntry.LunchRecipe = null;
-                    }
-                    context.MenuItems.Update(menuEntry);
+                    var copymenu = new MenuEntry(menuEntry);
+                    int? lunchid = copymenu.LunchRecipeId > 0 ? copymenu.LunchRecipeId : null;
+                    int? dinnerid = copymenu.DinnerRecipeId > 0 ? copymenu.DinnerRecipeId : null;
+                    copymenu.LunchRecipe = null;
+                    copymenu.DinnerRecipe = null;
+                    copymenu.LunchRecipeId = lunchid;
+                    copymenu.DinnerRecipeId = dinnerid;
+                    context.MenuItems.Update(copymenu);
                     await context.SaveChangesAsync();
                     return true;
                 }
@@ -127,11 +131,14 @@ namespace Matsedeln.Utils
             {
                 using (var context = new AppDbContext())
                 {
-                    if (menuEntry.DinnerRecipeId == 0)
-                    {
-                        menuEntry.DinnerRecipe = null;
-                    }
-                    context.MenuItems.Update(menuEntry);
+                    var copymenu = new MenuEntry(menuEntry);
+                    int? lunchid = copymenu.LunchRecipeId > 0 ? copymenu.LunchRecipeId : null;
+                    int? dinnerid = copymenu.DinnerRecipeId > 0 ? copymenu.DinnerRecipeId : null;
+                    copymenu.LunchRecipe = null;
+                    copymenu.DinnerRecipe = null;
+                    copymenu.LunchRecipeId = lunchid;
+                    copymenu.DinnerRecipeId = dinnerid;
+                    context.MenuItems.Update(copymenu);
                     await context.SaveChangesAsync();
                     return true;
                 }

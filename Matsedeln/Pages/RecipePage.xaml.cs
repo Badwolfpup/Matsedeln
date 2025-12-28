@@ -35,24 +35,6 @@ namespace Matsedeln.Pages
 
         public AppData Ad { get; }  = AppData.Instance;
 
-        private Border _selectedBorder;
-        //public Border SelectedBorder
-        //{
-        //    get { return selectedBorder; }
-        //    set
-        //    {
-        //        if (selectedBorder != value)
-        //        {
-        //            selectedBorder = value;
-        //            if (view.EnableAddGoodsBtn && selectedBorder != null && mainWindow.AddContentControl.Content is NewRecipeControl recipeControl)
-        //            {
-        //                recipeControl.ResetInput();
-        //            }
-        //            OnPropertyChanged(nameof(SelectedBorder));
-        //        }
-        //    }
-        //}
-
         public RecipePage()
         {
             InitializeComponent();
@@ -75,19 +57,18 @@ namespace Matsedeln.Pages
             if (sender is Border border && border.DataContext is Recipe recipe)
             {
                 if (border == null) return;
+                WeakReferenceMessenger.Default.Send(new AppData.AddRecipeToMenuMessage(recipe));
 
                 if (border.BorderBrush == Brushes.Red)
                 {
                     border.BorderBrush = Brushes.Transparent;
                     WeakReferenceMessenger.Default.Send(new AppData.RemoveIngredientShoplistMessage(recipe));
-                    //RemoveIngredientsFromShoppinglist(recipe);
                     return;
                 }
                 else
                 {
                     border.BorderBrush = Brushes.Red;
                     WeakReferenceMessenger.Default.Send(new AppData.AddIngredientShopListMessage(recipe));
-                    //AddIngredientToShoppinglist(recipe);
                     return;
                 }
 

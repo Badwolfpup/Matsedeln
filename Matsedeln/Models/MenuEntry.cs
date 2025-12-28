@@ -16,7 +16,9 @@ namespace Matsedeln.Models
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
         #endregion
-        
+     
+        public AppData Ad { get; } = AppData.Instance;
+
         private Recipe? lunchRecipe;
 
         public Recipe? LunchRecipe
@@ -70,6 +72,16 @@ namespace Matsedeln.Models
 
         public MenuEntry()
         {
+        }
+
+        public MenuEntry(MenuEntry menu)
+        {
+            LunchRecipe = menu.LunchRecipe;
+            DinnerRecipe = menu.DinnerRecipe;
+            LunchRecipeId = menu.LunchRecipeId;
+            DinnerRecipeId = menu.DinnerRecipeId;
+            Id = menu.Id;
+            Date = menu.Date;
         }
 
         public override string ToString()

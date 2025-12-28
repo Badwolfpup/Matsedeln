@@ -79,6 +79,7 @@ namespace Matsedeln
         public record ShowShoppingListMessage();
         public record PassGoodsToUCMessage(Goods good);
 
+        public record AddRecipeToMenuMessage(Recipe recipe);
         public record PasteImageMessage();
         #endregion
         [ObservableProperty]

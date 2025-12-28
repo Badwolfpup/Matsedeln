@@ -36,6 +36,9 @@ namespace Matsedeln.Models
             this.Id = recipe.Id;
             this.imagePath = recipe.ImagePath;
             this.ingredientlist = new ObservableCollection<Ingredient>(recipe.Ingredientlist);
+            this.ParentRecipe = recipe.ParentRecipe;
+            this.ParentRecipeId = recipe.ParentRecipeId;
+            this.ChildRecipes = recipe.ChildRecipes;
         }
 
         private string name;

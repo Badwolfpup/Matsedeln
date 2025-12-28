@@ -1,6 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Matsedeln.Models;
+using Matsedeln.Pages;
 using Matsedeln.Utils;
 using System;
 using System.Collections.Generic;
@@ -22,7 +24,8 @@ namespace Matsedeln.ViewModel
         [ObservableProperty]
         private string weekAndDate = "";
 
-
+        private bool lunchordinner;
+        private MenuEntry currentEntry;
         [ObservableProperty]
         public ObservableCollection<Recipe> localList;
         public CollectionViewSource MenuListSource { get; set; }
@@ -37,23 +40,41 @@ namespace Matsedeln.ViewModel
             DisplayWeek();
             MenuListSource = new CollectionViewSource();
             MenuListSource.Source = Ad.MenuList;
-            CopyRecipes();
             RecipesViewSource = new CollectionViewSource();
-            RecipesViewSource.Source = LocalList;
+            RecipesViewSource.Source = Ad.RecipesList;
+            WeakReferenceMessenger.Default.Register<AppData.AddRecipeToMenuMessage>(this, (r, m) => UpdateMenu(m.recipe));
         }
 
-        private void CopyRecipes()
+        private async void UpdateMenu(Recipe recipe)
         {
-            LocalList = new ObservableCollection<Recipe>();
-            var emptyrecipe = new Recipe { Name = "Ingen rätt är vald" };
-            emptyrecipe.Id = 0;
-            //emptyrecipe.ImagePath = null;
-            LocalList.Add(emptyrecipe);
-
-            foreach (var item in Ad.RecipesList)
+            if (lunchordinner)
             {
-                LocalList.Add(new Recipe(item));
+                currentEntry.LunchRecipe = recipe;
+                if (!await Ad.MenuService.UpdateLunchEntry(currentEntry)) MessageBox.Show("Kunde inte uppdatera maträtt för lunch.");
+                Ad.CurrentPage = Ad.MenuPageInstance;
             }
+            else
+            {
+                currentEntry.DinnerRecipe = recipe;
+                if (!await Ad.MenuService.UpdateDinnerEntry(currentEntry)) MessageBox.Show("Kunde inte uppdatera maträtt för middag.");
+                Ad.CurrentPage = Ad.MenuPageInstance;
+            }
+        }
+
+        [RelayCommand]
+        public async Task RemoveLunch(MenuEntry menuEntry)
+        {
+            if (menuEntry == null) return;
+            menuEntry.LunchRecipe = null;
+            if (!await Ad.MenuService.UpdateLunchEntry(menuEntry)) MessageBox.Show("Kunde inte radera maträtt för lunch.");
+        }
+        [RelayCommand]
+        public async Task RemoveDinner(MenuEntry menuEntry)
+        {
+            if (menuEntry == null) return;
+            menuEntry.DinnerRecipe = null;
+            if (!await Ad.MenuService.UpdateDinnerEntry(menuEntry)) MessageBox.Show("Kunde inte radera maträtt för dinner.");
+
         }
 
         private async void DisplayWeek()
@@ -78,25 +99,21 @@ namespace Matsedeln.ViewModel
             DisplayWeek();
         }
         [RelayCommand]
-        private async void LunchSelectionChanged(object[] obj)
+        private void LunchChanged(MenuEntry menuEntry)
         {
-            var menuItem = obj[0] as MenuEntry;
-            var recipe = obj[1] as Recipe;
-
-            if (menuItem == null || recipe == null) return;
-            menuItem.LunchRecipe = recipe;
-            if (await Ad.MenuService.UpdateLunchEntry(menuItem)) menuItem.LunchRecipe = recipe;
-
+            currentEntry = menuEntry;
+            lunchordinner = true;
+            Ad.CurrentPage = new RecipePage();
         }
         [RelayCommand]
-        private async void DinnerSelectionChanged(object[] obj)
+        private void DinnerChanged(MenuEntry menuEntry)
         {
-            var menuItem = obj[0] as MenuEntry;
-            var recipe = obj[1] as Recipe;
-
-            if (menuItem == null || recipe == null) return;
-            if (await Ad.MenuService.UpdateDinnerEntry(menuItem)) menuItem.DinnerRecipe = recipe;
+            currentEntry = menuEntry;
+            lunchordinner = false;
+            Ad.CurrentPage = new RecipePage();
         }
+
+
     }
 
 
