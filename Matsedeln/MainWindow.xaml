@@ -7,7 +7,7 @@
         xmlns:pages="clr-namespace:Matsedeln.Pages"
         xmlns:inter="http://schemas.microsoft.com/xaml/behaviors"
         mc:Ignorable="d"
-        Title="MainWindow" Height="1080" Width="1920">
+        Title="MainWindow" Height="1080" Width="1920" WindowStartupLocation="CenterScreen">
 
         <Window.CommandBindings>
             <CommandBinding Command="ApplicationCommands.Paste" Executed="PasteExecuted" />
@@ -16,7 +16,7 @@
         <Window.Resources>
                 <BooleanToVisibilityConverter x:Key="ShowUserControl"/>
         </Window.Resources>
-        <Grid Margin="10">
+        <Grid Margin="10" >
             <Grid.RowDefinitions>
                 <RowDefinition Height="50"></RowDefinition>
                 <RowDefinition Height="*"></RowDefinition>
@@ -28,7 +28,7 @@
             </Grid.ColumnDefinitions>
 
 
-            <StackPanel Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal">
+        <StackPanel Margin="10 0 0 0" Background="Cornsilk" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal">
                 <Button Content="Ingrediens" Command="{Binding ShowIngredientsPageCommand}"></Button>
                 <TextBox IsEnabled="{Binding Ad.IsFilterTextboxEnabled}" Margin="15 0 15 0" Text="{Binding Ad.FilterText, UpdateSourceTrigger=PropertyChanged}">
                     <inter:Interaction.Triggers>
@@ -51,8 +51,9 @@
                     </ToolTip>
                 </Button.ToolTip>
             </Button>
-        <ContentControl Content="{Binding Ad.CurrentUserControl}" Grid.Row="1" Grid.Column="0" x:Name="AddContentControl"/>
-        <Frame Content="{Binding Ad.CurrentPage}" Grid.Row="1" Grid.Column="1" x:Name="ContentFrame" NavigationUIVisibility="Hidden" Grid.ColumnSpan="2"></Frame>
+        
+        <ContentControl Content="{Binding Ad.CurrentUserControl}" Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" x:Name="AddContentControl"/>
+        <Frame Margin="10 5 0 0" Content="{Binding Ad.CurrentPage}" Grid.Row="1" Grid.Column="1" x:Name="ContentFrame" NavigationUIVisibility="Hidden" Grid.ColumnSpan="2"></Frame>
         </Grid>
 
 </Window>

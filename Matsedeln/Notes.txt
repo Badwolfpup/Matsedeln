@@ -1,14 +1,9 @@
 ﻿
 Kalendersida
-	Veckoplanering
-		Lägga till/ta bort/ändra valt recept
-			Ikon förändras
-			Olika färger för lunch/middag + äta "ute"
-			När en vecka väljs (eller när man klickar calender och nuvarande vecka inte finns) läggs  menuitem till i DB för de 7 dagarna om de inte finns.
-			SelectedItem="{Binding Converter={StaticResource }}"
+		Mouseover
+			Efter 3 sek, visa storpopup med inforuta
 			
 		Visa senaste 4 veckornas
-			Mer kondenserad view
 			Matcha mouseover  för alla förekomster
 
 		Statistik
@@ -33,7 +28,5 @@ Kalendersida
 			Antal unika luncher/middagar (exklusive äta ute)
 			Antal äta ute
 
-Lägga till recept till recept
-
 **TODO**
-Testa att det funkar att lägga till recept från receptlistan till veckoplaneringen och att det sparas i DB
+Putsa på UI, grid på alla usercontrol?

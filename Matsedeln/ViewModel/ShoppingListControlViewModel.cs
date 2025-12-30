@@ -19,22 +19,23 @@ namespace Matsedeln.ViewModel
 
         public ShoppingListViewModel()
         {
-            
+            WeakReferenceMessenger.Default.Register<AppData.ResetShoppinglistUCMessages>(this, (r, m) => AbortIngredientlist());
         }
 
-
+ 
         [RelayCommand]
         private void AbortIngredientlist()
         {
             Ad.ShoppingList.Clear();
-            var request = new FindBorderShopListMessage(Ad.RecipePageInstance.RecipeItemsControl);
-            var response = WeakReferenceMessenger.Default.Send(request);
-            var allBorders = response.Response;
+            //var request = new FindBorderShopListMessage(Ad.RecipePageInstance.RecipeItemsControl);
+            //var response = WeakReferenceMessenger.Default.Send(request);
+            //var allBorders = response.Response;
+            WeakReferenceMessenger.Default.Send(new AppData.RemoveHighlightRecipeMessage());
             WeakReferenceMessenger.Default.Send(new AppData.ShowShoppingListMessage());
-            foreach (var item in allBorders)
-            {
-                if (item is Border border)  border.BorderBrush = System.Windows.Media.Brushes.Transparent;
-            }
+            //foreach (var item in allBorders)
+            //{
+            //    if (item is Border border)  border.BorderBrush = System.Windows.Media.Brushes.Transparent;
+            //}
         }
         [RelayCommand]
         private void CopyShoppinglist()
@@ -47,6 +48,12 @@ namespace Matsedeln.ViewModel
             }
             //CopyList();
             Clipboard.SetText(string.Join(Environment.NewLine, Ad.ShoppingList.Select(x => x.ToString())));
+        }
+
+        [RelayCommand]
+        private void RemoveIngredient(Ingredient ingredient)
+        {
+            if (Ad.ShoppingList.Contains(ingredient)) Ad.ShoppingList.Remove(ingredient);
         }
 
         private void CopyList()
@@ -69,9 +76,13 @@ namespace Matsedeln.ViewModel
         {
             if (ingredient == null) return;
 
-            if (ingredient.Unit == "g") { ingredient.Unit = "g"; ingredient.Quantity = ingredient.QuantityInGram; }
-            else if (ingredient.Unit == "dl") { ingredient.Unit = "dl"; ingredient.Quantity = ingredient.QuantityInDl; }
-            else if (ingredient.Unit == "st") { ingredient.Unit = "st"; ingredient.Quantity = ingredient.QuantityInSt; }
+            if (ingredient.Unit == "g") {  ingredient.Quantity = ingredient.QuantityInGram; }
+            else if (ingredient.Unit == "dl") { ingredient.Quantity = ingredient.QuantityInDl; }
+            else if (ingredient.Unit == "msk") { ingredient.Quantity = ingredient.QuantityInMsk; }
+            else if (ingredient.Unit == "tsk") { ingredient.Quantity = ingredient.QuantityInTsk; }
+            else if (ingredient.Unit == "krm") { ingredient.Quantity = ingredient.QuantityInKrm; }
+            else if (ingredient.Unit == "st") { ingredient.Quantity = ingredient.QuantityInSt; }
+
         }
 
     }

@@ -46,6 +46,13 @@ namespace Matsedeln.Usercontrols
             SetFocus();
         }
 
+        public NewRecipeControl(Recipe recipe)
+        {
+            InitializeComponent();
+            DataContext = new NewRecipeControlViewModel(recipe);
+            SetFocus();
+        }
+
         private void SetFocus()
         {
             Dispatcher.BeginInvoke(() => Keyboard.Focus(RecipeNameInput), DispatcherPriority.Input);
@@ -61,7 +68,16 @@ namespace Matsedeln.Usercontrols
             }
         }
 
+        private void Decimal_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            if (sender is TextBox box)
+            {
+                string newText = box.Text.Insert(box.SelectionStart, e.Text);
 
+                // Allow empty string or a valid decimal number
+                e.Handled = !Regex.IsMatch(newText, @"^$|^\d+(\,\d{0,2})?$");
+            }
+        }
 
     }
 }

@@ -3,8 +3,10 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Matsedeln.Models;
 using Matsedeln.Pages;
+using Matsedeln.Usercontrols;
 using Matsedeln.Utils;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -29,7 +31,6 @@ namespace Matsedeln.ViewModel
         [ObservableProperty]
         public ObservableCollection<Recipe> localList;
         public CollectionViewSource MenuListSource { get; set; }
-        public CollectionViewSource RecipesViewSource { get; set; }
         private CultureInfo culture = new CultureInfo("sv-SE");
         private System.Globalization.Calendar calendar;
         private DateTime WeekToDisplay = DateTime.Today;
@@ -40,13 +41,22 @@ namespace Matsedeln.ViewModel
             DisplayWeek();
             MenuListSource = new CollectionViewSource();
             MenuListSource.Source = Ad.MenuList;
-            RecipesViewSource = new CollectionViewSource();
-            RecipesViewSource.Source = Ad.RecipesList;
+            MenuListSource.Filter += FilterMenuEntry;
             WeakReferenceMessenger.Default.Register<AppData.AddRecipeToMenuMessage>(this, (r, m) => UpdateMenu(m.recipe));
+            WeakReferenceMessenger.Default.Register<AppData.RefreshMenuEntrySourceMessage>(this, (r, m) => MenuListSource.View.Refresh());
+        }
+
+        private void FilterMenuEntry(object sender, FilterEventArgs e)
+        {
+            if (e.Item is MenuEntry menuEntry)
+            {
+                e.Accepted = menuEntry.Date >= WeekToDisplay && menuEntry.Date < WeekToDisplay.AddDays(7);
+            }
         }
 
         private async void UpdateMenu(Recipe recipe)
         {
+            if (Ad.CurrentUserControl is not WeeklyMenuControl) return;
             if (lunchordinner)
             {
                 currentEntry.LunchRecipe = recipe;
@@ -59,6 +69,7 @@ namespace Matsedeln.ViewModel
                 if (!await Ad.MenuService.UpdateDinnerEntry(currentEntry)) MessageBox.Show("Kunde inte uppdatera maträtt för middag.");
                 Ad.CurrentPage = Ad.MenuPageInstance;
             }
+            WeakReferenceMessenger.Default.Send(new AppData.RefreshMenuEntrySourceMessage());
         }
 
         [RelayCommand]
@@ -83,8 +94,8 @@ namespace Matsedeln.ViewModel
             weeknumber = calendar.GetWeekOfYear(WeekToDisplay, culture.DateTimeFormat.CalendarWeekRule, culture.DateTimeFormat.FirstDayOfWeek);
             WeekToDisplay = WeekToDisplay.AddDays(-diff);
             WeekAndDate = $"{WeekToDisplay.Year} - Vecka {weeknumber}: {WeekToDisplay.Date.ToString("d/M", CultureInfo.InvariantCulture)} - {WeekToDisplay.AddDays(6).Date.ToString("d/M", CultureInfo.InvariantCulture)}";
-            await Ad.MenuService.AddEmptyDays(WeekToDisplay);
         }
+
         [RelayCommand]
         private void PrevWeek()
         {

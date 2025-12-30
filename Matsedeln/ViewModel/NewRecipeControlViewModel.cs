@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing.Printing;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -32,6 +33,8 @@ namespace Matsedeln.ViewModel
         [ObservableProperty]
         private string addingButtonText = "Lägg till ingrediens";
         [ObservableProperty]
+        private string addingRecipeButtonText = "Lägg till recept";
+        [ObservableProperty]
         private string recipeName = "";
         [ObservableProperty]
         private bool showRest;
@@ -44,7 +47,21 @@ namespace Matsedeln.ViewModel
         private bool _shouldCopyImage;
         [ObservableProperty]
         private bool hasAddedImage;
+        private bool isAddingNewRecipe = true;
 
+        public NewRecipeControlViewModel(Recipe recipe)
+        {
+            NewRecipe = recipe;
+            RecipeName = recipe.Name;
+            HasAddedImage = true;
+            isAddingNewRecipe = false;
+            AddingRecipeButtonText = "Uppdatera recept";
+            RecipeImage = new BitmapImage(new Uri(recipe.ImagePath));
+            IsAddingNewIngredient = false;
+            WeakReferenceMessenger.Default.Register<AppData.PassGoodsToUCMessage>(this, (r, m) => PassGoodsToUC(m.good));
+            WeakReferenceMessenger.Default.Register<AppData.IsGoodAddedToIngredientMessage>(this, (r, m) => IsGoodAddedToIngredient(m.Goods));
+            WeakReferenceMessenger.Default.Register<AppData.AddRecipeToRecipeMessage>(this, (r, m) => AddRecipe(m.recipe));
+        }
 
         public NewRecipeControlViewModel()
         {
@@ -55,6 +72,7 @@ namespace Matsedeln.ViewModel
             WeakReferenceMessenger.Default.Register<AppData.PassGoodsToUCMessage>(this, (r, m) => PassGoodsToUC(m.good));
             WeakReferenceMessenger.Default.Register<AppData.PasteImageMessage>(this, (r, m) => OnPasteExecuted());
             WeakReferenceMessenger.Default.Register<AppData.IsGoodAddedToIngredientMessage>(this, (r, m) => IsGoodAddedToIngredient(m.Goods));
+            WeakReferenceMessenger.Default.Register<AppData.AddRecipeToRecipeMessage>(this, (r, m) => AddRecipe(m.recipe));
         }
         
         private void IsGoodAddedToIngredient(Goods good)
@@ -84,6 +102,11 @@ namespace Matsedeln.ViewModel
         [RelayCommand]
         private void AddIngredient()
         {
+            if (Ad.CurrentPage is not IngredientPage)
+            {
+                Ad.CurrentPage = Ad.IngredientPageInstance;
+                return;
+            }
             if (NewIngredient.Good == null)
             {
                 MessageBox.Show("Välj en ingrediens i listan.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -112,6 +135,16 @@ namespace Matsedeln.ViewModel
                 //ResetInput();
             }
         }
+        [RelayCommand]
+        private void AddRecipe(Recipe recipe)
+        {
+            if (Ad.CurrentPage is not RecipePage)
+            {
+                Ad.CurrentPage = Ad.RecipePageInstance;
+                return;
+            }
+            if (!NewRecipe.ChildRecipes.Any(x => x.ChildRecipeId == recipe.Id) && NewRecipe != recipe) NewRecipe.ChildRecipes.Add(new RecipeHierarchy(NewRecipe, recipe));
+        }
 
         [RelayCommand]
         private async Task AddNewRecipe()
@@ -121,25 +154,40 @@ namespace Matsedeln.ViewModel
                 MessageBox.Show("Ange ett namn för receptet.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            if (NewRecipe.Ingredientlist.Count < 2)
+            if (NewRecipe.Ingredientlist.Count + NewRecipe.ChildRecipes.Count < 2)
             {
-                MessageBox.Show("Lägg till minst två ingredienser i receptet.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Lägg till minst två saker i receptet.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            if (await Ad.RecipeService.AddRecipe(NewRecipe, Ad.RecipesList))
+            if (isAddingNewRecipe)
             {
-                if(_shouldCopyImage) KopieraBild();
-                
-                ResetInput();
-                NewRecipe = new Recipe("");
-                RecipeImage = new BitmapImage(new Uri(NewRecipe.ImagePath));
-                RecipeName = "";
-                WeakReferenceMessenger.Default.Send(new AppData.RemoveAllHighlightBorderMessage());
+                if (await Ad.RecipeService.AddRecipe(NewRecipe, Ad.RecipesList))
+                {
+                    if (_shouldCopyImage) KopieraBild();
+
+                    ResetInput();
+                    NewRecipe = new Recipe("");
+                    RecipeImage = new BitmapImage(new Uri(NewRecipe.ImagePath));
+                    RecipeName = "";
+                    WeakReferenceMessenger.Default.Send(new AppData.RemoveAllHighlightBorderMessage());
+                }
+                else
+                {
+                    MessageBox.Show("Något gick fel vid tillägget av receptet i databasen.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
             else
             {
-                MessageBox.Show("Något gick fel vid tillägget av receptet i databasen.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (await Ad.RecipeService.UpdateRecipe(NewRecipe))
+                {
+                    MessageBox.Show("Recept uppdaterad!", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                    WeakReferenceMessenger.Default.Send(new AppData.RemoveHighlightRecipeMessage());
+                }
+                else
+                {
+                    MessageBox.Show("Något gick fel vid uppdateringen av receptet i databasen.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
 
+                }
             }
         }
 
@@ -155,6 +203,10 @@ namespace Matsedeln.ViewModel
         }
 
         [RelayCommand]
+        private void RemoveRecipe(RecipeHierarchy recipe) => NewRecipe.ChildRecipes.Remove(recipe);  
+
+
+        [RelayCommand]
         private void SelectIngredient(Ingredient ingredient)
         {
             IsAddingNewIngredient = false;
@@ -166,10 +218,10 @@ namespace Matsedeln.ViewModel
         [RelayCommand]
         private void AbortNewRecipe()
         {
-            ResetInput();
             NewRecipe = new Recipe("");
             RecipeImage = new BitmapImage(new Uri(NewRecipe.ImagePath));
             NewIngredient = new Ingredient();
+            ResetInput();
             WeakReferenceMessenger.Default.Send(new AppData.ResetBorderMessage());
         }
 
@@ -192,9 +244,19 @@ namespace Matsedeln.ViewModel
 
         partial void OnQuantityChanged(string value)
         {
-            NewIngredient.Quantity = int.TryParse(value, out int result) ? result : 0;
-            NewIngredient.GetQuantityInGram(NewIngredient.Quantity);
-            NewIngredient.ConvertToOtherUnits(NewIngredient.QuantityInGram);
+            var converter = new ToSweDecimalConverter();
+            var parsed = converter.ConvertBack(value, typeof(double), null, CultureInfo.CurrentCulture);
+            if (parsed != DependencyProperty.UnsetValue)
+            {
+                //bool success = double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out double result);
+                NewIngredient.Quantity = (double)parsed;  // Or handle as needed
+                NewIngredient.GetQuantityInGram(NewIngredient.Quantity);
+                NewIngredient.ConvertToOtherUnits();
+            }
+            else
+            {
+                NewIngredient.Quantity = 0;  // Invalid input
+            }
         }
 
         partial void OnIsAddingNewIngredientChanged(bool value)

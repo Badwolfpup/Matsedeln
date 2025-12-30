@@ -78,15 +78,56 @@ namespace Matsedeln.Utils
             {
                 using (var context = new AppDbContext())
                 {
-                    var entry = await context.MenuItems.FirstOrDefaultAsync(me => me.Date.Date == date.Date);
-                    if (entry != null) return false;
-                    for (int i = 0; i < 7; i++)
+
+                    var haslastmonth = await context.MenuItems.FirstOrDefaultAsync(me => me.Date.Date == date.Date.AddMonths(-1));
+                    var hasthismonth = await context.MenuItems.FirstOrDefaultAsync(me => me.Date.Date == date.Date);
+                    var hasnextmonth = await context.MenuItems.FirstOrDefaultAsync(me => me.Date.Date == date.Date.AddMonths(1));
+
+                    if (haslastmonth != null && hasthismonth != null && hasnextmonth != null) return false;
+                    if (haslastmonth == null)
                     {
-                        var newEntry = new MenuEntry
+                        var year = date.AddMonths(-1).Year;
+                        var month = date.AddMonths(-1).Month;
+                        var daysinmonth = DateTime.DaysInMonth(year, month);
+                        var firstday = new DateTime(year, month, 1);
+                        for (int i = 0; i < daysinmonth; i++)
                         {
-                            Date = date.AddDays(i)
-                        };
-                        context.MenuItems.Add(newEntry);
+                            var newEntry = new MenuEntry
+                            {
+                                Date = firstday.AddDays(i)
+                            };
+                            context.MenuItems.Add(newEntry);
+                        }
+                    }
+                    if (hasthismonth == null)
+                    {
+                        var year = date.Year;
+                        var month = date.Month;
+                        var daysinmonth = DateTime.DaysInMonth(year, month);
+                        var firstday = new DateTime(year, month, 1);
+                        for (int i = 0; i < daysinmonth; i++)
+                        {
+                            var newEntry = new MenuEntry
+                            {
+                                Date = firstday.AddDays(i)
+                            };
+                            context.MenuItems.Add(newEntry);
+                        }
+                    }
+                    if (hasnextmonth == null)
+                    {
+                        var year = date.AddMonths(1).Year;
+                        var month = date.AddMonths(1).Month;
+                        var daysinmonth = DateTime.DaysInMonth(year, month);
+                        var firstday = new DateTime(year, month, 1);
+                        for (int i = 0; i < daysinmonth; i++)
+                        {
+                            var newEntry = new MenuEntry
+                            {
+                                Date = firstday.AddDays(i)
+                            };
+                            context.MenuItems.Add(newEntry);
+                        }
                     }
                     return await context.SaveChangesAsync() > 0;
                 }

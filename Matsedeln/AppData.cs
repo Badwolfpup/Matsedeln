@@ -67,13 +67,20 @@ namespace Matsedeln
         public record IsGoodAddedToIngredientMessage(Goods Goods);
         public record RefreshCollectionViewMessage();
 
+        public record RefreshMenuEntrySourceMessage();
         public record ResetBorderMessage();
 
         public record PasteImageGoodsUCMessage(BitmapImage image);
         public record PasteImageRecipeUCMessage(BitmapImage image);
 
+        public record AddRecipeToRecipeMessage(Recipe recipe);
+
+        public record RemoveHighlightRecipeMessage();
+        public record GoBackToShoppingListMessage();
+        public record ResetShoppinglistUCMessages();
         public record RemoveIngredientShoplistMessage(Recipe recipe);
 
+        public record RefreshIngredientMessage(Recipe recipe);
         public record AddIngredientShopListMessage(Recipe recipe);
 
         public record ShowShoppingListMessage();
@@ -81,6 +88,7 @@ namespace Matsedeln
 
         public record AddRecipeToMenuMessage(Recipe recipe);
         public record PasteImageMessage();
+
         #endregion
         [ObservableProperty]
         private string filterText = string.Empty;

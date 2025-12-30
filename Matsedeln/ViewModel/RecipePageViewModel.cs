@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Matsedeln.Models;
 using Matsedeln.Usercontrols;
 using Matsedeln.Utils;
+using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -19,7 +20,7 @@ namespace Matsedeln.ViewModel
         public AppData Ad { get; } = AppData.Instance;
         public CollectionViewSource RecipesViewSource { get; set; }
 
-
+        private ShoppingListControl shoppinglist;
 
 
         public RecipePageViewModel()
@@ -30,7 +31,7 @@ namespace Matsedeln.ViewModel
             WeakReferenceMessenger.Default.Register<AppData.RefreshCollectionViewMessage>(this, (r, m) => RecipesViewSource.View.Refresh());
             WeakReferenceMessenger.Default.Register<AppData.AddIngredientShopListMessage>(this, (r, m) => AddIngredientToShoppinglist(m.recipe));
             WeakReferenceMessenger.Default.Register<AppData.RemoveIngredientShoplistMessage>(this, (r, m) => RemoveIngredientsFromShoppinglist(m.recipe));
-
+            WeakReferenceMessenger.Default.Register<AppData.GoBackToShoppingListMessage>(this, (r, m) => Ad.CurrentUserControl = shoppinglist);
         }
 
         private void FilterRecipe(object sender, FilterEventArgs e)
@@ -62,7 +63,14 @@ namespace Matsedeln.ViewModel
         private void AddIngredientToShoppinglist(Recipe recipe)
         {
             if (Ad.CurrentUserControl is ShoppingListControl shop && shop.ShowShoppinglist) return;
-            recipe.Ingredientlist.ToList().ForEach(ingredient =>
+
+            var ingredients = recipe.ChildRecipes.SelectMany(x => x.ChildRecipe.Ingredientlist).ToList();
+            if (ingredients == null) ingredients = new List<Ingredient>();
+            foreach (var item in recipe.Ingredientlist)
+            {
+                ingredients.Add(item);
+            }
+            ingredients.ForEach(ingredient =>
             {
                 if (!Ad.ShoppingList.Any(i => i.Good.Name == ingredient.Good.Name))
                 {
@@ -77,9 +85,16 @@ namespace Matsedeln.ViewModel
                     existingItem.QuantityInMsk += ingredient.QuantityInMsk;
                     existingItem.QuantityInTsk += ingredient.QuantityInTsk;
                     existingItem.Quantity += ingredient.GetQuantity(existingItem);
-                    existingItem.ConvertToOtherUnits(existingItem.Quantity);
+                    existingItem.ConvertToOtherUnits();
                 }
             });
+        }
+
+        [RelayCommand]
+        private void EditRecipe(Recipe recipe)
+        {
+            shoppinglist = Ad.CurrentUserControl as ShoppingListControl ?? new ShoppingListControl();
+            Ad.CurrentUserControl = new NewRecipeControl(recipe);
         }
 
 
@@ -101,7 +116,7 @@ namespace Matsedeln.ViewModel
                         itemToRemove.QuantityInMsk -= ingredient.QuantityInMsk;
                         itemToRemove.QuantityInTsk -= ingredient.QuantityInTsk;
                         itemToRemove.Quantity -= ingredient.GetQuantity(itemToRemove);
-                        itemToRemove.ConvertToOtherUnits(itemToRemove.Quantity);
+                        itemToRemove.ConvertToOtherUnits();
                     }
                 }
             });

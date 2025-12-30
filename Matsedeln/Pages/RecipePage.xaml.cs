@@ -40,6 +40,7 @@ namespace Matsedeln.Pages
             InitializeComponent();
             DataContext = new RecipePageViewModel();
             Loaded += RecipePage_Loaded; ;
+            WeakReferenceMessenger.Default.Register<AppData.RemoveHighlightRecipeMessage>(this, (r, m) => RemoveHighlightBorder());
         }
 
         private void RecipePage_Loaded(object sender, RoutedEventArgs e)
@@ -58,24 +59,35 @@ namespace Matsedeln.Pages
             {
                 if (border == null) return;
                 WeakReferenceMessenger.Default.Send(new AppData.AddRecipeToMenuMessage(recipe));
-
-                if (border.BorderBrush == Brushes.Red)
+                if (e.ChangedButton == MouseButton.Left)
                 {
-                    border.BorderBrush = Brushes.Transparent;
-                    WeakReferenceMessenger.Default.Send(new AppData.RemoveIngredientShoplistMessage(recipe));
-                    return;
-                }
-                else
-                {
-                    border.BorderBrush = Brushes.Red;
-                    WeakReferenceMessenger.Default.Send(new AppData.AddIngredientShopListMessage(recipe));
-                    return;
+                    if (border.BorderBrush == Brushes.Red)
+                    {
+                        border.BorderBrush = Brushes.Transparent;
+                        WeakReferenceMessenger.Default.Send(new AppData.RemoveIngredientShoplistMessage(recipe));
+                        return;
+                    }
+                    else
+                    {
+                        border.BorderBrush = Brushes.Red;
+                        WeakReferenceMessenger.Default.Send(new AppData.AddRecipeToRecipeMessage(recipe));
+                        WeakReferenceMessenger.Default.Send(new AppData.AddIngredientShopListMessage(recipe));
+                        return;
+                    }
                 }
 
 
             }
         }
 
+        private void RemoveHighlightBorder()
+        {
+            var borders = FindAllBorders(RecipeItemsControl);
+            foreach (var item in borders)
+            {
+                if (item.BorderBrush == Brushes.Red) item.BorderBrush = Brushes.Transparent;
+            }
+        }
 
 
         public IEnumerable<Border> FindAllBorders(DependencyObject parent)

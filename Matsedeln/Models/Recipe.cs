@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
+using System.Windows.Media.Animation;
 
 namespace Matsedeln.Models
 {
@@ -36,8 +37,7 @@ namespace Matsedeln.Models
             this.Id = recipe.Id;
             this.imagePath = recipe.ImagePath;
             this.ingredientlist = new ObservableCollection<Ingredient>(recipe.Ingredientlist);
-            this.ParentRecipe = recipe.ParentRecipe;
-            this.ParentRecipeId = recipe.ParentRecipeId;
+            this.ParentRecipes = recipe.ParentRecipes;
             this.ChildRecipes = recipe.ChildRecipes;
         }
 
@@ -63,9 +63,10 @@ namespace Matsedeln.Models
         public int Id { get; set; }
 
 
-        public int? ParentRecipeId { get; set; }  // FK for self-ref
-        public Recipe? ParentRecipe { get; set; }  // Nav prop
-        public ICollection<Recipe> ChildRecipes { get; set; } = new List<Recipe>();  // Reverse nav
+
+        public ICollection<RecipeHierarchy> ChildRecipes { get; set; } = new ObservableCollection<RecipeHierarchy>();
+
+        public ICollection<RecipeHierarchy> ParentRecipes { get; set; } = new ObservableCollection<RecipeHierarchy>();
 
 
         [NotMapped]

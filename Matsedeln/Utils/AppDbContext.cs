@@ -16,6 +16,8 @@ namespace Matsedeln.Utils
         public DbSet<Recipe> Recipes { get; set; }
         public DbSet<Goods> Goods { get; set; }
         public DbSet<Ingredient> Ingredients { get; set; }
+        public DbSet<RecipeHierarchy> RecipeHierarchies { get; set; }
+
 
         public DbSet<MenuEntry> MenuItems { get; set; }
 
@@ -26,17 +28,27 @@ namespace Matsedeln.Utils
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Recipe>()
-                .HasMany(r => r.ChildRecipes)
-                .WithOne(r => r.ParentRecipe)
-                .HasForeignKey(r => r.ParentRecipeId)
-                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Recipe>()
                 .HasMany(r => r.Ingredientlist)
                 .WithOne(i => i.Recipe)
                 .HasForeignKey(i => i.RecipeId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RecipeHierarchy>()
+                .HasKey(rh => rh.Id);
+
+            modelBuilder.Entity<RecipeHierarchy>()
+                .HasOne(rh => rh.ParentRecipe)
+                .WithMany(r => r.ChildRecipes)  
+                .HasForeignKey(rh => rh.ParentRecipeId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<RecipeHierarchy>()
+                .HasOne(rh => rh.ChildRecipe)
+                .WithMany(r => r.ParentRecipes)  
+                .HasForeignKey(rh => rh.ChildRecipeId)
+                .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<Ingredient>()
                 .HasKey(i => i.Id);
@@ -47,6 +59,10 @@ namespace Matsedeln.Utils
 
             modelBuilder.Entity<Ingredient>()
                 .Property(i => i.Unit)
+                .HasDefaultValue("g");
+
+            modelBuilder.Entity<Ingredient>()
+                .Property(i => i.ChosenUnit)
                 .HasDefaultValue("g");
 
             modelBuilder.Entity<Ingredient>()

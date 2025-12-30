@@ -87,27 +87,6 @@ namespace Matsedeln
             WeakReferenceMessenger.Default.Send(new AppData.RefreshCollectionViewMessage());
         }
 
-        [RelayCommand]
-        private void ADADS(object sender)
-        {
-
-                //EnableAddGoodsBtn = false;
-                //AddContentControl.Content = new NewGoodsControl(this);
-                //EnableAddRecipeBtn = true;
-
-        }
-
-        [RelayCommand]
-        private void ShowViewShoppinglist_Click(object sender)
-        {
-            if (sender is Button b)
-            {
-                //EnableAddRecipeBtn = false;
-                //AddContentControl.Content = new NewRecipeControl(this, RecipesList);
-                //EnableAddGoodsBtn = true;
-            }
-        }
-
 
         [RelayCommand]
         private async void DeleteGoodOrRecipe(object sender)
@@ -128,6 +107,13 @@ namespace Matsedeln
                         return;
                     }
                     Ad.GoodsList.Remove(selectedGood);
+                    var goodtoremove = Ad.RecipesList.Where(x => x.Ingredientlist.Any(y => y.GoodsId == selectedGood.Id)).Select(y => y.Ingredientlist).ToList();
+                    foreach (var item in goodtoremove)
+                    {
+                        var ing = item.FirstOrDefault(x => x.GoodsId == selectedGood.Id);
+
+                        item.Remove(ing);
+                    }
                     WeakReferenceMessenger.Default.Send(new AppData.RefreshCollectionViewMessage());
                     WeakReferenceMessenger.Default.Send(new AppData.PassGoodsToUCMessage(new Goods()));
                 }
@@ -162,7 +148,15 @@ namespace Matsedeln
                             MessageBox.Show("Det gick inte att radera receptet");
                             return;
                         }
+
                         Ad.RecipesList.Remove(SelectedRecipe);
+                        foreach (var item in Ad.MenuList)
+                        {
+                            if (item.LunchRecipeId == SelectedRecipe.Id) item.LunchRecipe = null;
+                            if (item.DinnerRecipeId == SelectedRecipe.Id) item.DinnerRecipe = null;
+                        }
+                        WeakReferenceMessenger.Default.Send(new AppData.RefreshMenuEntrySourceMessage());
+                        WeakReferenceMessenger.Default.Send(new AppData.ResetShoppinglistUCMessages());
                         ((RecipePageViewModel)Ad.RecipePageInstance.DataContext).RecipesViewSource.View.Refresh();
                     }
                 }

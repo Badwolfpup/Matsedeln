@@ -61,6 +61,18 @@ namespace Matsedeln.ViewModel
             GoodsImage = new BitmapImage(new Uri(NewGood.ImagePath));
         }
 
+        [RelayCommand]
+        private void ResetGperDL(bool ischecked)
+        {
+           if (!ischecked) GperDL = "0";
+        }
+
+        [RelayCommand]
+        private void ResetGperST(bool ischecked)
+        {
+            if (!ischecked) GperST = "0";
+
+        }
 
         [RelayCommand]
         private void ShowAddRecipeUserControl()

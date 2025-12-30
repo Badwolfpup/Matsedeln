@@ -70,7 +70,7 @@ namespace Matsedeln.Usercontrols
             Ad.ShoppingList = new();
             WeakReferenceMessenger.Default.Register<FindBorderShopListMessage>(this, (r, m) =>
             {
-                var foundBorder = FindAllBorders(m.ItemsControl);  // Your logic
+                var foundBorder = FindAllBorders(m.ItemsControl); 
                 m.Reply(foundBorder);
             });
             WeakReferenceMessenger.Default.Register<AppData.ShowShoppingListMessage>(this, (r, m) => {
@@ -87,18 +87,7 @@ namespace Matsedeln.Usercontrols
             ShowShoppinglist = true;
         }
 
-        private void AbortShoppinglist_Click(object sender, RoutedEventArgs e)
-        {
-            Ad.ShoppingList.Clear();
-            var allBorders = FindAllBorders(Ad.RecipePageInstance.RecipeItemsControl);
 
-            foreach (var border in allBorders)
-            {
-                border.BorderBrush = Brushes.Transparent;
-            }
-            ShowShoppinglist = false;
-            ShowIngredients = true;
-        }
 
         private IEnumerable<Border> FindAllBorders(DependencyObject parent)
         {

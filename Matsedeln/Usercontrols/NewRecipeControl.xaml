@@ -11,10 +11,12 @@
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="ShowAddIngredients"/>
+        <local:ShowAddIngredientBtnConverter x:Key="ShowAddIngredientBtnConverter"></local:ShowAddIngredientBtnConverter>
+        <local:ToSweDecimalConverter x:Key="ToSweDecimalConverter"></local:ToSweDecimalConverter>
     </UserControl.Resources>
 
-    <Grid Background="#FFFDFDFD">
-        <StackPanel>
+    <Grid Background="Cornsilk">
+        <StackPanel Margin="5 0 0 0">
             <Button Grid.Column="0"  Command="{Binding ShowAddGoodsUserControlCommand}">
                 <Button.Content>
                     <StackPanel Orientation="Horizontal">
@@ -46,34 +48,57 @@
                     <ComboBox x:Name="UnitComboBox" ItemsSource="{Binding NewIngredient.UnitOptions}" SelectedItem="{Binding NewIngredient.Unit}" Height="40" Width="130" HorizontalAlignment="Left">
 
                     </ComboBox>
-                    <TextBox TabIndex="1" Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}" Width="70" PreviewTextInput="CheckIfDigit_preview"/>
+                    <TextBox TabIndex="1" Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}" Width="70" PreviewTextInput="Decimal_PreviewTextInput"/>
                 </StackPanel>
-                <Button Content="{Binding AddingButtonText}" Width="100" HorizontalAlignment="Left" Command="{Binding AddIngredientCommand}" />
-                <Border BorderBrush="Transparent" BorderThickness="1" Margin="0,20,0,20" MinHeight="100">
-                    <ItemsControl x:Name="RecList" ItemsSource="{Binding NewRecipe.Ingredientlist}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <inter:Interaction.Triggers>
-                                        <inter:EventTrigger EventName="MouseLeftButtonDown">
-                                            <inter:InvokeCommandAction Command="{Binding DataContext.SelectIngredientCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"></inter:InvokeCommandAction>
-                                        </inter:EventTrigger>
-                                    </inter:Interaction.Triggers>
-                                    <Image Width="50" Height="50" Source="{Binding Good.ImagePath}"></Image>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Margin="5 0 0 0" Text="{Binding Quantity}"/>
-                                        <TextBlock Margin="5 0 0 0" Text="{Binding Unit}"/>
-                                        <TextBlock Margin="5 0 0 0" Text="{Binding Good.Name}"/>
-                                    </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Content="{Binding AddingButtonText}" Margin="0 0 10 0" Width="100" Command="{Binding AddIngredientCommand}" Visibility="{Binding IsAddingNewIngredient, Converter={StaticResource ShowAddIngredientBtnConverter}}" />
+                    <Button Content="Lägg till recept" Width="100" Command="{Binding AddRecipeCommand}"/>
+                </StackPanel>
+                <Border BorderBrush="Transparent" BorderThickness="1" Margin="0,20,0,20" MinHeight="100" MaxHeight="400">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <ItemsControl x:Name="RecList" ItemsSource="{Binding NewRecipe.Ingredientlist}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <inter:Interaction.Triggers>
+                                                    <inter:EventTrigger EventName="MouseLeftButtonDown">
+                                                        <inter:InvokeCommandAction Command="{Binding DataContext.SelectIngredientCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"></inter:InvokeCommandAction>
+                                                    </inter:EventTrigger>
+                                                </inter:Interaction.Triggers>
+                                                <Image Width="50" Height="50" Source="{Binding Good.ImagePath}"></Image>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Margin="5 0 0 0" Text="{Binding Quantity, Converter={StaticResource ToSweDecimalConverter}}"/>
+                                                    <TextBlock Margin="5 0 0 0" Text="{Binding Unit}"/>
+                                                    <TextBlock Margin="5 0 0 0" Text="{Binding Good.Name}"/>
+                                                </StackPanel>
+                                                <Button Content="X" Width="30" MinWidth="30" Command="{Binding DataContext.RemoveIngredientCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
+                                            </StackPanel>
 
-                                    <Button Content="X" Width="30" MinWidth="30" Command="{Binding DataContext.RemoveIngredientCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                                        </StackPanel>                                    
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <StackPanel>
+                                <ItemsControl ItemsSource="{Binding NewRecipe.ChildRecipes}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Image Width="50" Height="50" Source="{Binding ChildRecipe.ImagePath}"></Image>
+                                                <TextBlock Margin="5 0 0 0" Text="{Binding ChildRecipe.Name}"/>
+                                                <Button Content="X" Width="30" MinWidth="30" Command="{Binding DataContext.RemoveRecipeCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+
                 </Border>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,10,0,0">
-                    <Button Content="Lägg till recept" Width="100" Command="{Binding AddNewRecipeCommand}" />
+                    <Button Content="{Binding AddingRecipeButtonText}" Width="100" Command="{Binding AddNewRecipeCommand}" />
                     <Button Content="Avbryt" Width="100" Command="{Binding AbortNewRecipeCommand}" />
                 </StackPanel>
             </StackPanel>

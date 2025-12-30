@@ -23,7 +23,7 @@ namespace Matsedeln.Models
 
         private string unit;
 
-        private int quantity;
+        private double quantity;
 
         [Required]
         public string Unit
@@ -41,7 +41,7 @@ namespace Matsedeln.Models
 
 
         [Required]
-        public int Quantity
+        public double Quantity
         {
             get => quantity;
             set
@@ -56,11 +56,26 @@ namespace Matsedeln.Models
             }
         }
 
+        public string ChosenUnit
+        {
+            get => chosenunit;
+            set
+            {
+                if (chosenunit != value)
+                {
+                    chosenunit = value;
+                    OnPropertyChanged(nameof(ChosenUnit));
+                }
+            }
+        }
+
         private int quantityingram;
         private int quantityindl;
         private int quantityinst;
         private int quantityinmsk;
         private int quantityintsk;
+        private int quantityinkrm;
+        private string chosenunit = "g";
 
         [NotMapped]
         public int QuantityInGram
@@ -128,6 +143,19 @@ namespace Matsedeln.Models
                 }
             }
         }
+        [NotMapped]
+        public int QuantityInKrm
+        {
+            get => quantityinkrm;
+            set
+            {
+                if (quantityinkrm != value)
+                {
+                    quantityinkrm = value;
+                    OnPropertyChanged(nameof(QuantityInKrm));
+                }
+            }
+        }
 
         public int Id { get; set; }
 
@@ -168,11 +196,12 @@ namespace Matsedeln.Models
             UnitOptions = new ObservableCollection<string>();
             this.Good = copy.Good;
             this.Unit = copy.Unit;
+            this.Id = copy.Id;
             GetQuantityInGram(copy.Quantity);
-            ConvertToOtherUnits(this.QuantityInGram);
+            ConvertToOtherUnits();
             AddUnitOptions();
-            this.Quantity = QuantityInGram;
-            this.Unit = "g";
+            this.Quantity = copy.Quantity;
+            this.ChosenUnit = copy.ChosenUnit;
 
         }
         public void AddUnitOptions()
@@ -183,8 +212,9 @@ namespace Matsedeln.Models
             {
                 UnitOptions.Add("dl");
                 UnitOptions.Add("l");
-                UnitOptions.Add("tsk");
                 UnitOptions.Add("msk");
+                UnitOptions.Add("tsk");
+                UnitOptions.Add("krm");
             }
             if (Good.GramsPerStick != 0) UnitOptions.Add("st");
 
@@ -192,46 +222,60 @@ namespace Matsedeln.Models
             if (!UnitOptions.Contains(Unit)) Unit = "g";
         }
 
-        public void ConvertToOtherUnits(int q)
+        public void ConvertToOtherUnits()
         {
             if (string.IsNullOrEmpty(Unit)) return;
+            
+            if (Good.GramsPerDeciliter != 0)
+            {
+                QuantityInDl = QuantityInGram / Good.GramsPerDeciliter + QuantityInGram % Good.GramsPerDeciliter > 0 ? 1 : 0;
+                QuantityInMsk = QuantityInGram / (int)Math.Ceiling(((double)Good.GramsPerDeciliter / 20 * 3)) + (QuantityInGram % Good.GramsPerDeciliter > 0 ? 1 : 0);
+                QuantityInTsk = QuantityInGram / (int)Math.Ceiling(((double)Good.GramsPerDeciliter / 20)) + (QuantityInGram % Good.GramsPerDeciliter > 0 ? 1 : 0);
+                QuantityInKrm = QuantityInGram / (int)Math.Ceiling(((double)Good.GramsPerDeciliter / 100)) + (QuantityInGram % Good.GramsPerDeciliter > 0 ? 1 : 0);
+            }
+            if ((Good.GramsPerStick != 0)) QuantityInSt = QuantityInGram / Good.GramsPerStick + (QuantityInSt % Good.GramsPerStick > 0 ? 1 : 0);
 
-            if (Unit == "g")
-            {
-                if (Good.GramsPerStick != 0) QuantityInSt = QuantityInGram / Good.GramsPerStick + (QuantityInSt % Good.GramsPerStick > 0 ? 1 : 0);
-                if (Good.GramsPerDeciliter != 0) QuantityInDl = QuantityInGram / Good.GramsPerDeciliter + QuantityInGram % Good.GramsPerDeciliter > 0 ? 1 : 0;
-            }
-            else if (Unit == "dl")
-            {
-                if (Good.GramsPerDeciliter != 0) QuantityInDl = QuantityInGram / Good.GramsPerDeciliter + (QuantityInDl % Good.GramsPerDeciliter > 0 ? 1 : 0);
-            }
-            else if (Unit == "st")
-            {
-                if (Good.GramsPerStick != 0) QuantityInSt = QuantityInGram / Good.GramsPerStick + (QuantityInSt % Good.GramsPerStick > 0 ? 1 : 0);
-            }
-            else if (Unit == "kg") {
-                if (Good.GramsPerStick != 0) QuantityInSt = QuantityInGram / Good.GramsPerStick + (QuantityInSt % Good.GramsPerStick > 0 ? 1 : 0);
-                if (Good.GramsPerDeciliter != 0) QuantityInDl = QuantityInGram / Good.GramsPerDeciliter + (QuantityInDl % Good.GramsPerDeciliter > 0 ? 1 : 0);
-            }
-            else if (Unit == "msk")
-            {
-                QuantityInMsk = QuantityInGram / (Good.GramsPerDeciliter / 20 * 3);
-            }
-            else if (Unit == "tsk")
-            {
-                QuantityInTsk = QuantityInGram / (Good.GramsPerDeciliter / 20);
+            //if (Unit == "g")
+            //{
+            //    if (Good.GramsPerStick != 0) QuantityInSt = QuantityInGram / Good.GramsPerStick + (QuantityInSt % Good.GramsPerStick > 0 ? 1 : 0);
+            //    if (Good.GramsPerDeciliter != 0) QuantityInDl = QuantityInGram / Good.GramsPerDeciliter + QuantityInGram % Good.GramsPerDeciliter > 0 ? 1 : 0;
+            //}
+            //else if (Unit == "dl")
+            //{
+            //    if (Good.GramsPerDeciliter != 0) QuantityInDl = QuantityInGram / Good.GramsPerDeciliter + (QuantityInDl % Good.GramsPerDeciliter > 0 ? 1 : 0);
+            //}
+            //else if (Unit == "st")
+            //{
+            //    if (Good.GramsPerStick != 0) QuantityInSt = QuantityInGram / Good.GramsPerStick + (QuantityInSt % Good.GramsPerStick > 0 ? 1 : 0);
+            //}
+            //else if (Unit == "kg") {
+            //    if (Good.GramsPerStick != 0) QuantityInSt = QuantityInGram / Good.GramsPerStick + (QuantityInSt % Good.GramsPerStick > 0 ? 1 : 0);
+            //    if (Good.GramsPerDeciliter != 0) QuantityInDl = QuantityInGram / Good.GramsPerDeciliter + (QuantityInDl % Good.GramsPerDeciliter > 0 ? 1 : 0);
+            //}
+            //else if (Unit == "msk")
+            //{
+            //    if (Good.GramsPerDeciliter != 0) QuantityInDl = QuantityInGram / (Good.GramsPerDeciliter / 20 * 3) + (QuantityInMsk % Good.GramsPerDeciliter > 0 ? 1 : 0);
+            //}
+            //else if (Unit == "tsk")
+            //{
+            //    if (Good.GramsPerDeciliter != 0) QuantityInDl = QuantityInGram / (Good.GramsPerDeciliter / 20) + (QuantityInTsk % Good.GramsPerDeciliter > 0 ? 1 : 0);
 
-            }
+            //}
+            //else if ((Unit == "krm")) 
+            //{
+            //    if (Good.GramsPerDeciliter != 0) QuantityInDl = QuantityInGram / (Good.GramsPerDeciliter / 100) + (QuantityInKrm % Good.GramsPerDeciliter > 0 ? 1 : 0);
+            //}
         }
 
-        public void GetQuantityInGram(int q)
+        public void GetQuantityInGram(double q)
         {
-            if (Unit == "g") QuantityInGram = q;
-            else if (Unit == "dl") QuantityInGram = Good.GramsPerDeciliter * q;
-            else if (Unit == "st") QuantityInGram = Good.GramsPerStick * q;
-            else if (Unit == "kg") QuantityInGram = q * 1000;
-            else if (Unit == "msk") QuantityInGram = (Good.GramsPerDeciliter / 20 * 3) * q;
-            else if (Unit == "tsk") QuantityInGram = (Good.GramsPerDeciliter / 20) * q;
+            if (Unit == "g") QuantityInGram = (int)q;
+            else if (Unit == "dl") QuantityInGram = (int)(Good.GramsPerDeciliter * q);
+            else if (Unit == "st") QuantityInGram = (int)(Good.GramsPerStick * q);
+            else if (Unit == "kg") QuantityInGram = (int)q * 1000;
+            else if (Unit == "msk") QuantityInGram = (int)((Good.GramsPerDeciliter / 20 * 3) * q);
+            else if (Unit == "tsk") QuantityInGram = (int)((Good.GramsPerDeciliter / 20) * q);
+            else if (Unit == "krm") QuantityInGram = (int)((Good.GramsPerDeciliter / 100) * q);
         }
 
 
@@ -255,6 +299,8 @@ namespace Matsedeln.Models
                     return QuantityInMsk;
                 case "tsk":
                     return QuantityInTsk;
+                case "krm":
+                    return QuantityInKrm;
                 default:
                     return QuantityInGram;
             }

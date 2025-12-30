@@ -15,13 +15,37 @@ namespace Matsedeln.Utils
             {
                 using (var context = new AppDbContext())
                 {
-                    var recipes = new ObservableCollection<Recipe>(await context.Recipes.Include(r => r.Ingredientlist).ThenInclude(g => g.Good).ToListAsync());
+                    var recipes = new ObservableCollection<Recipe>(
+                        await context.Recipes
+                            .Include(r => r.Ingredientlist)
+                                .ThenInclude(i => i.Good)
+                            .Include(r => r.ChildRecipes)  // NEW: Load ChildRecipes
+                                .ThenInclude(cr => cr.ChildRecipe)  // Load the actual child Recipe
+                                    .ThenInclude(child => child.Ingredientlist)  // Optional: Load child ingredients
+                                        .ThenInclude(ci => ci.Good)  // Optional: Load child's goods
+                            .ToListAsync()
+                    );
                     foreach (var rec in recipes)
                     {
                         foreach (var ing in rec.Ingredientlist)
                         {
                             ing.GetQuantityInGram(ing.Quantity);
-                            ing.ConvertToOtherUnits(ing.QuantityInGram);
+                            ing.ConvertToOtherUnits();
+                            ing.AddUnitOptions();
+                        }
+
+                        // Optional: Process child recipes' ingredients too
+                        foreach (var hierarchy in rec.ChildRecipes)
+                        {
+                            if (hierarchy.ChildRecipe != null)
+                            {
+                                foreach (var childIng in hierarchy.ChildRecipe.Ingredientlist)
+                                {
+                                    childIng.GetQuantityInGram(childIng.Quantity);
+                                    childIng.ConvertToOtherUnits();
+                                    childIng.AddUnitOptions();
+                                }
+                            }
                         }
                     }
                     return recipes;
@@ -43,7 +67,31 @@ namespace Matsedeln.Utils
                     foreach (var ing in recipe.Ingredientlist)
                     {
                         ing.Recipe = recipe;
-                        context.Entry(ing.Good).State = EntityState.Unchanged;
+                        if (ing.Good != null)
+                        {
+                            context.Entry(ing.Good).State = EntityState.Unchanged;
+                        }
+                    }
+
+                    // Handle child recipes' ingredients (NEW: Prevents insert errors for ChildRecipes)
+                    foreach (var hierarchy in recipe.ChildRecipes)
+                    {
+                        if (hierarchy.ChildRecipe != null)
+                        {
+                            foreach (var childIng in hierarchy.ChildRecipe.Ingredientlist)
+                            {
+                                childIng.Recipe = hierarchy.ChildRecipe;  // Set FK if needed
+                                if (childIng.Good != null)
+                                {
+                                    context.Entry(childIng.Good).State = EntityState.Unchanged;
+                                }
+                            }
+                            // Attach the child recipe itself (if it exists)
+                            if (hierarchy.ChildRecipe.Id > 0)
+                            {
+                                context.Recipes.Attach(hierarchy.ChildRecipe);
+                            }
+                        }
                     }
 
                     context.Recipes.Add(recipe);
@@ -59,6 +107,7 @@ namespace Matsedeln.Utils
                 return false;
             }
         }
+
 
         public async Task<bool> UpdateRecipe(Recipe recipe)
         {
@@ -108,5 +157,7 @@ namespace Matsedeln.Utils
                 return false;
             }
         }
+
+
     }
 }
