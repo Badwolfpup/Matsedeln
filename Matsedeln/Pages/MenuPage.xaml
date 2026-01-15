@@ -4,6 +4,8 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:Matsedeln.Pages"
+      xmlns:inter="http://schemas.microsoft.com/xaml/behaviors"
+      xmlns:user="clr-namespace:Matsedeln.Usercontrols"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="MenuPage">
@@ -15,20 +17,14 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
-
         </Grid.RowDefinitions>
-
-
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
             <Button Grid.Column="0" Content="&lt;" Style="{StaticResource BtnNoMax}" Width="30" Command="{Binding PrevMonthCommand}"></Button>
             <TextBlock Margin="20 0 20 0" HorizontalAlignment="Center" Grid.Column="1" FontSize="20" Text="{Binding Time}"/>
-
             <Button Grid.Column="2" Content="&gt;" Style="{StaticResource BtnNoMax}" Width="30" Command="{Binding NextMonthCommand}"></Button>
-            </StackPanel>
+        </StackPanel>
 
         <ItemsControl ItemsSource="{Binding MenuEntrySource.View}" Grid.Row="1">
-
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <UniformGrid  Columns="7" Rows="6"></UniformGrid>
@@ -36,17 +32,27 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Border BorderBrush="LightBlue" BorderThickness="3" CornerRadius="20">
+                    <Border BorderBrush="LightBlue" BorderThickness="3" CornerRadius="20" >
                         <StackPanel>
-                            <TextBlock HorizontalAlignment="Center" Text="{Binding Date, Converter={StaticResource DateConverter}}"></TextBlock>     
-                            <StackPanel Margin="5" Background="Cornsilk" Orientation="Horizontal">
-                                <Image Margin="5" Width="40" Height="40" Stretch="Fill" Source="{Binding LunchRecipe.ImagePath}"></Image>
-                                <TextBlock Text="{Binding LunchRecipe.Name}"/>
-                            </StackPanel>
-                            <StackPanel Margin="5 0 5 0" Background="CornflowerBlue" Orientation="Horizontal">
-                                <Image Margin="5" Width="40" Height="40" Stretch="Fill" Source="{Binding DinnerRecipe.ImagePath}"></Image>
-                                <TextBlock Text="{Binding DinnerRecipe.Name}"/>
-                            </StackPanel>
+                            <TextBlock HorizontalAlignment="Center" Text="{Binding Date, Converter={StaticResource DateConverter}}"></TextBlock>
+                            <Border Tag="lunch" BorderBrush="Transparent" BorderThickness="3" CornerRadius="10" MouseEnter="Lunch_MouseEnter" MouseLeave="Lunch_MouseLeave">
+                                <StackPanel  Margin="5" Background="Cornsilk" Orientation="Horizontal" ToolTipService.InitialShowDelay="2000" ToolTipService.ShowDuration="3000">
+                                    <StackPanel.ToolTip>
+                                        <user:ImageTooltip RecipeName="{Binding LunchRecipe.Name}" ImageSource="{Binding LunchRecipe.ImagePath}"/>
+                                    </StackPanel.ToolTip>
+                                    <Image Margin="5" Width="40" Height="40" Stretch="Fill" Source="{Binding LunchRecipe.ImagePath}"></Image>
+                                    <TextBlock Text="{Binding LunchRecipe.Name}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Tag="dinner" BorderBrush="Transparent" BorderThickness="3" CornerRadius="10" MouseEnter="Dinner_MouseEnter" MouseLeave="Dinner_MouseLeave">
+                                <StackPanel Margin="5 0 5 0" Background="CornflowerBlue" Orientation="Horizontal" ToolTipService.InitialShowDelay="2000" ToolTipService.ShowDuration="3000">
+                                    <StackPanel.ToolTip>
+                                        <user:ImageTooltip RecipeName="{Binding DinnerRecipe.Name}" ImageSource="{Binding DinnerRecipe.ImagePath}"/>
+                                    </StackPanel.ToolTip>
+                                    <Image Margin="5" Width="40" Height="40" Stretch="Fill" Source="{Binding DinnerRecipe.ImagePath}"></Image>
+                                    <TextBlock Text="{Binding DinnerRecipe.Name}"/>
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
                     </Border>
                 </DataTemplate>

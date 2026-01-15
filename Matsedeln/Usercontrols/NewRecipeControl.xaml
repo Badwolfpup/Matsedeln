@@ -51,7 +51,7 @@
                     <TextBox TabIndex="1" Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}" Width="70" PreviewTextInput="Decimal_PreviewTextInput"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="{Binding AddingButtonText}" Margin="0 0 10 0" Width="100" Command="{Binding AddIngredientCommand}" Visibility="{Binding IsAddingNewIngredient, Converter={StaticResource ShowAddIngredientBtnConverter}}" />
+                    <Button Content="{Binding AddingButtonText}" Margin="0 0 10 0" Width="100" Command="{Binding AddIngredientCommand}" Visibility="{Binding IsAddingNewIngredient, Converter={StaticResource ShowAddIngredients}}"  />
                     <Button Content="Lägg till recept" Width="100" Command="{Binding AddRecipeCommand}"/>
                 </StackPanel>
                 <Border BorderBrush="Transparent" BorderThickness="1" Margin="0,20,0,20" MinHeight="100" MaxHeight="400">
@@ -60,23 +60,38 @@
                             <ItemsControl x:Name="RecList" ItemsSource="{Binding NewRecipe.Ingredientlist}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <StackPanel>
-                                            <StackPanel Orientation="Horizontal">
-                                                <inter:Interaction.Triggers>
-                                                    <inter:EventTrigger EventName="MouseLeftButtonDown">
-                                                        <inter:InvokeCommandAction Command="{Binding DataContext.SelectIngredientCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"></inter:InvokeCommandAction>
-                                                    </inter:EventTrigger>
-                                                </inter:Interaction.Triggers>
-                                                <Image Width="50" Height="50" Source="{Binding Good.ImagePath}"></Image>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Margin="5 0 0 0" Text="{Binding Quantity, Converter={StaticResource ToSweDecimalConverter}}"/>
-                                                    <TextBlock Margin="5 0 0 0" Text="{Binding Unit}"/>
-                                                    <TextBlock Margin="5 0 0 0" Text="{Binding Good.Name}"/>
-                                                </StackPanel>
-                                                <Button Content="X" Width="30" MinWidth="30" Command="{Binding DataContext.RemoveIngredientCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
-                                            </StackPanel>
+                                        <Grid ToolTipService.ShowDuration="3000" ToolTipService.InitialShowDelay="2000">
+                                            <Grid.ToolTip>
+                                                <ToolTip Placement="MousePoint" Background="Transparent" BorderThickness="0">
+                                                    <Image Source="{Binding Good.ImagePath}" 
+                                                           Width="200" Height="200" 
+                                                           RenderOptions.BitmapScalingMode="HighQuality" />
+                                                </ToolTip>
+                                            </Grid.ToolTip>
+                                            <inter:Interaction.Triggers>
+                                                <inter:EventTrigger EventName="MouseLeftButtonDown">
+                                                    <inter:InvokeCommandAction Command="{Binding DataContext.SelectIngredientCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"></inter:InvokeCommandAction>
+                                                </inter:EventTrigger>
+                                            </inter:Interaction.Triggers>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="50"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="50"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Image Grid.Column="0" Width="50" Height="50" Source="{Binding Good.ImagePath}"/>
+                                            <!--<StackPanel Orientation="Horizontal" Margin="10 0 0 0" Grid.Column="1">
+                                                    <TextBlock Text="{Binding Quantity, Converter={StaticResource ToSweDecimalConverter}}" />
+                                                    <TextBlock Text="{Binding Unit}" />
+                                                    <TextBlock Text="{Binding Good.Name}" />
+                                                </StackPanel>-->
+                                                <TextBlock Margin="10 0 0 0" Grid.Column="1">
+                                                    <Run Text="{Binding Quantity, Converter={StaticResource ToSweDecimalConverter}}"/>
+                                                    <Run Text="{Binding Unit}"/>
+                                                    <Run Text="{Binding Good.Name}"/>
+                                                </TextBlock>
 
-                                        </StackPanel>                                    
+                                                <Button Grid.Column="2" Content="X" Width="30" MinWidth="30" Command="{Binding DataContext.RemoveIngredientCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
+                                        </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -84,11 +99,19 @@
                                 <ItemsControl ItemsSource="{Binding NewRecipe.ChildRecipes}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <StackPanel Orientation="Horizontal">
-                                                <Image Width="50" Height="50" Source="{Binding ChildRecipe.ImagePath}"></Image>
-                                                <TextBlock Margin="5 0 0 0" Text="{Binding ChildRecipe.Name}"/>
-                                                <Button Content="X" Width="30" MinWidth="30" Command="{Binding DataContext.RemoveRecipeCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
-                                            </StackPanel>
+                                            <Grid ToolTipService.InitialShowDelay="2000" ToolTipService.ShowDuration="3000">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="50"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="50"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Grid.ToolTip>
+                                                    <local:ImageTooltip ImageSource="{Binding ChildRecipe.ImagePath}"/>
+                                                </Grid.ToolTip>
+                                                <Image Grid.Column="0" Width="50" Height="50" Source="{Binding ChildRecipe.ImagePath}"></Image>
+                                                <TextBlock Grid.Column="1" Margin="10 0 0 0" Text="{Binding ChildRecipe.Name}"/>
+                                                <Button Grid.Column="2" Content="X" Width="30" MinWidth="30" Command="{Binding DataContext.RemoveRecipeCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
+                                            </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>

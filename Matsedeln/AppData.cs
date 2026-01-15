@@ -66,7 +66,7 @@ namespace Matsedeln
         public record RemoveAllHighlightBorderMessage();
         public record IsGoodAddedToIngredientMessage(Goods Goods);
         public record RefreshCollectionViewMessage();
-
+        public record RefreshIngredientCollectionViewMessage(ObservableCollection<Ingredient> Ingredients);
         public record RefreshMenuEntrySourceMessage();
         public record ResetBorderMessage();
 

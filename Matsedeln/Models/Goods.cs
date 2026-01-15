@@ -33,6 +33,7 @@ namespace Matsedeln.Models
 
         private int gramsperdeciliter;
         private int gramsperstick;
+        private bool isinrecipe;
 
         [Required]
         public string Name
@@ -58,6 +59,20 @@ namespace Matsedeln.Models
                 {
                     imagePath = value;
                     OnPropertyChanged(nameof(ImagePath));
+                }
+            }
+        }
+
+        [NotMapped]
+        public bool IsInRecipe
+        {
+            get => isinrecipe;
+            set
+            {
+                if (value != isinrecipe)
+                {
+                    isinrecipe = value;
+                    OnPropertyChanged(nameof(IsInRecipe));
                 }
             }
         }

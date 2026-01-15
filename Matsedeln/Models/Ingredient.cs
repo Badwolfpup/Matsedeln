@@ -76,6 +76,7 @@ namespace Matsedeln.Models
         private int quantityintsk;
         private int quantityinkrm;
         private string chosenunit = "g";
+        
 
         [NotMapped]
         public int QuantityInGram
@@ -156,6 +157,7 @@ namespace Matsedeln.Models
                 }
             }
         }
+        
 
         public int Id { get; set; }
 

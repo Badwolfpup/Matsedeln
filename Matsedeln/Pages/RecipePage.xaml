@@ -8,28 +8,36 @@
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="RecipePage">
+    <Page.Resources>
+        <local:RecipeNameConverter x:Key="RecipeNameConverter"></local:RecipeNameConverter>
+    </Page.Resources>
     <Grid Background="Cornsilk">
-        <ItemsControl x:Name="RecipeItemsControl" ItemsSource="{Binding RecipesViewSource.View}">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <WrapPanel Orientation="Horizontal"></WrapPanel>
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <Border BorderBrush="Transparent" BorderThickness="3" Margin="5" Padding="5" CornerRadius="10" MouseDown="Select_Border">
-                        <inter:Interaction.Triggers>
-                            <inter:EventTrigger EventName="MouseRightButtonDown">
-                                <inter:InvokeCommandAction Command="{Binding DataContext.EditRecipeCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
-                            </inter:EventTrigger>
-                        </inter:Interaction.Triggers>
-                        <StackPanel>
-                            <Image Width="100" Height="100" Source="{Binding ImagePath}"></Image>
-                            <TextBlock Text="{Binding Name}" HorizontalAlignment="Center"></TextBlock>
-                        </StackPanel>
-                    </Border>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ItemsControl x:Name="RecipeItemsControl" ItemsSource="{Binding RecipesViewSource.View}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal"></WrapPanel>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border BorderBrush="Transparent" BorderThickness="3" Width="200" Margin="5" Padding="5" CornerRadius="10" MouseDown="Select_Border">
+                            <inter:Interaction.Triggers>
+                                <inter:EventTrigger EventName="MouseRightButtonDown">
+                                    <inter:InvokeCommandAction Command="{Binding DataContext.EditRecipeCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
+                                </inter:EventTrigger>
+                            </inter:Interaction.Triggers>
+                            <StackPanel ToolTipService.InitialShowDelay="1000">
+                                <StackPanel.ToolTip>
+                                    <TextBlock Text="{Binding Name}"/>
+                                </StackPanel.ToolTip>
+                                <Image Width="100" Height="100" Source="{Binding ImagePath}"></Image>
+                                <TextBlock Text="{Binding Name, Converter={StaticResource RecipeNameConverter}}" HorizontalAlignment="Center"></TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
     </Grid>
 </Page>

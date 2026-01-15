@@ -36,12 +36,15 @@
                                     <RowDefinition Height="*"></RowDefinition>
                                     <RowDefinition Height="*"></RowDefinition>
                                 </Grid.RowDefinitions>
-                                <Grid Height="50" Grid.Row="0" Background="Cornsilk">
+                                <Grid Height="50" Grid.Row="0" Background="Cornsilk" ToolTipService.InitialShowDelay="2000" ToolTipService.ShowDuration="3000">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"></ColumnDefinition>
                                         <ColumnDefinition Width="4*"></ColumnDefinition>
                                         <ColumnDefinition Width="*"></ColumnDefinition>
                                     </Grid.ColumnDefinitions>
+                                    <Grid.ToolTip>
+                                        <local:ImageTooltip ImageSource="{Binding LunchRecipe.ImagePath}"/>
+                                    </Grid.ToolTip>
                                     <TextBlock Text="Lunch" HorizontalAlignment="Right" Grid.Column="0"/>
                                     <Button Grid.Column="1" Background="PapayaWhip" Foreground="Black" Command="{Binding DataContext.LunchChangedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
                                         <Button.Content>
@@ -54,12 +57,15 @@
                                     <Button Grid.Column="2" Content="X" Width="30" MinWidth="15" Command="{Binding DataContext.RemoveLunchCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"/>
 
                                 </Grid>
-                                <Grid Height="50" Grid.Row="1" Background="CornflowerBlue">
+                                <Grid Height="50" Grid.Row="1" Background="CornflowerBlue" ToolTipService.InitialShowDelay="2000" ToolTipService.ShowDuration="3000">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"></ColumnDefinition>
                                         <ColumnDefinition Width="4*"></ColumnDefinition>
                                         <ColumnDefinition Width="*"></ColumnDefinition>
                                     </Grid.ColumnDefinitions>
+                                    <Grid.ToolTip>
+                                        <local:ImageTooltip ImageSource="{Binding DinnerRecipe.ImagePath}"/>
+                                    </Grid.ToolTip>
                                     <TextBlock  Text="Middag" HorizontalAlignment="Right" Grid.Column="0"/>
                                     <Button Grid.Column="1" Background="LightSkyBlue" Foreground="Black" Command="{Binding DataContext.DinnerChangedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
                                         <Button.Content>

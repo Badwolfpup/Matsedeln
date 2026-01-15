@@ -1,9 +1,10 @@
 ﻿using Matsedeln.Models;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Net.NetworkInformation;
 using System.Text;
-using Microsoft.EntityFrameworkCore;
 
 namespace Matsedeln.Utils
 {
@@ -57,44 +58,70 @@ namespace Matsedeln.Utils
                 return new ObservableCollection<Recipe>();
             }
         }
-
         public async Task<bool> AddRecipe(Recipe recipe, ObservableCollection<Recipe> recipelist)
         {
             try
             {
                 using (var context = new AppDbContext())
                 {
+                    // Handle ingredients: Set FKs and manage Goods state
                     foreach (var ing in recipe.Ingredientlist)
                     {
                         ing.Recipe = recipe;
-                        if (ing.Good != null)
+                        if (ing.Good != null && context.Entry(ing.Good).State == EntityState.Detached)
                         {
-                            context.Entry(ing.Good).State = EntityState.Unchanged;
+                            context.Attach(ing.Good);  // Attach without changing state
                         }
                     }
 
-                    // Handle child recipes' ingredients (NEW: Prevents insert errors for ChildRecipes)
+                    // Handle child recipes
                     foreach (var hierarchy in recipe.ChildRecipes)
                     {
                         if (hierarchy.ChildRecipe != null)
                         {
+                            hierarchy.ChildRecipeId = hierarchy.ChildRecipe.Id;  // Ensure FK is set
                             foreach (var childIng in hierarchy.ChildRecipe.Ingredientlist)
                             {
-                                childIng.Recipe = hierarchy.ChildRecipe;  // Set FK if needed
+                                childIng.Recipe = hierarchy.ChildRecipe;
                                 if (childIng.Good != null)
                                 {
-                                    context.Entry(childIng.Good).State = EntityState.Unchanged;
+                                    try
+                                    {
+                                        if (context.Entry(childIng.Good).State == EntityState.Detached)
+                                        {
+                                            context.Attach(childIng.Good);
+                                        }
+                                    }
+                                    catch (InvalidOperationException)
+                                    {
+                                        // Entity is already tracked; skip or replace
+                                        var existing = context.Goods.Local.FirstOrDefault(g => g.Id == childIng.Good.Id);
+                                        if (existing != null) childIng.Good = existing;
+                                    }
                                 }
                             }
-                            // Attach the child recipe itself (if it exists)
+                            // Use Update for existing, Add for new
                             if (hierarchy.ChildRecipe.Id > 0)
                             {
-                                context.Recipes.Attach(hierarchy.ChildRecipe);
+                                context.Recipes.Update(hierarchy.ChildRecipe);
+                            }
+                            else
+                            {
+                                context.Recipes.Add(hierarchy.ChildRecipe);
                             }
                         }
                     }
 
-                    context.Recipes.Add(recipe);
+                    // Use Update if recipe exists, Add if new
+                    if (recipe.Id > 0)
+                    {
+                        context.Recipes.Update(recipe);
+                    }
+                    else
+                    {
+                        context.Recipes.Add(recipe);
+                    }
+
                     await context.SaveChangesAsync();
                 }
                 recipelist.Add(recipe);
@@ -102,11 +129,12 @@ namespace Matsedeln.Utils
             }
             catch (Exception ex)
             {
-                // Log the exception
+                // Use a proper logger instead of Console
                 Console.WriteLine($"An error occurred while adding a recipe: {ex.Message}");
                 return false;
             }
         }
+
 
 
         public async Task<bool> UpdateRecipe(Recipe recipe)
@@ -115,7 +143,36 @@ namespace Matsedeln.Utils
             {
                 using (var context = new AppDbContext())
                 {
-                    var existing = await context.Recipes.Include(r => r.Ingredientlist).FirstAsync(r => r.Id == recipe.Id);
+                    var existing = await context.Recipes.Include(r => r.Ingredientlist).Include(r => r.ChildRecipes).FirstAsync(r => r.Id == recipe.Id);
+                    foreach (var ing in recipe.Ingredientlist)
+                    {
+                        var existingIng = existing.Ingredientlist.FirstOrDefault(i => i.Id == ing.Id);
+                        if (existingIng != null)
+                        {
+                            context.Entry(existingIng).CurrentValues.SetValues(ing);
+                        }
+                        else
+                        {
+                            ing.RecipeId = existing.Id;  // Ensure FK is set
+                            existing.Ingredientlist.Add(ing);
+                        }
+                    }
+                        var deletedIngredient = existing.Ingredientlist.Where(x => !recipe.Ingredientlist.Any(y => y.Id == x.Id));
+                        context.Ingredients.RemoveRange(deletedIngredient);
+                    foreach (var rec in recipe.ChildRecipes)
+                    {
+                        var existingRec = existing.ChildRecipes.FirstOrDefault(i => i.Id == rec.Id);
+                        if (existingRec != null)
+                        {
+                            context.Entry(existingRec).CurrentValues.SetValues(rec);
+                        }
+                        else
+                        {
+                            existing.ChildRecipes.Add(rec);
+                        }
+                    }
+                        var deletedRecipe = existing.ChildRecipes.Where(x => !recipe.ChildRecipes.Any(y => y.Id == x.Id));
+                        context.RecipeHierarchies.RemoveRange(deletedRecipe);
                     context.Entry(existing).CurrentValues.SetValues(recipe);
                     await context.SaveChangesAsync();
                 }

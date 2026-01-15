@@ -13,6 +13,7 @@ using System.Collections.ObjectModel;
 using System.Drawing.Printing;
 using System.Globalization;
 using System.IO;
+using System.Printing;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -48,6 +49,7 @@ namespace Matsedeln.ViewModel
         [ObservableProperty]
         private bool hasAddedImage;
         private bool isAddingNewRecipe = true;
+        private bool isEditingRecipe = false;
 
         public NewRecipeControlViewModel(Recipe recipe)
         {
@@ -57,7 +59,8 @@ namespace Matsedeln.ViewModel
             isAddingNewRecipe = false;
             AddingRecipeButtonText = "Uppdatera recept";
             RecipeImage = new BitmapImage(new Uri(recipe.ImagePath));
-            IsAddingNewIngredient = false;
+            IsAddingNewIngredient = true;
+            isEditingRecipe = true;
             WeakReferenceMessenger.Default.Register<AppData.PassGoodsToUCMessage>(this, (r, m) => PassGoodsToUC(m.good));
             WeakReferenceMessenger.Default.Register<AppData.IsGoodAddedToIngredientMessage>(this, (r, m) => IsGoodAddedToIngredient(m.Goods));
             WeakReferenceMessenger.Default.Register<AppData.AddRecipeToRecipeMessage>(this, (r, m) => AddRecipe(m.recipe));
@@ -105,6 +108,7 @@ namespace Matsedeln.ViewModel
             if (Ad.CurrentPage is not IngredientPage)
             {
                 Ad.CurrentPage = Ad.IngredientPageInstance;
+                Ad.IsFilterTextboxEnabled = true;
                 return;
             }
             if (NewIngredient.Good == null)
@@ -126,13 +130,16 @@ namespace Matsedeln.ViewModel
             if (IsAddingNewIngredient)
             {
                 NewRecipe.Ingredientlist.Add(NewIngredient);
+                //NewIngredient.Good.IsInRecipe = true;
+                //WeakReferenceMessenger.Default.Send(new AppData.RefreshCollectionViewMessage());
                 NewIngredient = new Ingredient();
                 ResetInput();
             }
             else
             {
                 NewIngredient = new Ingredient();
-                //ResetInput();
+                //NewIngredient.Good.IsInRecipe = true;
+                //WeakReferenceMessenger.Default.Send(new AppData.RefreshCollectionViewMessage());
             }
         }
         [RelayCommand]
@@ -141,9 +148,10 @@ namespace Matsedeln.ViewModel
             if (Ad.CurrentPage is not RecipePage)
             {
                 Ad.CurrentPage = Ad.RecipePageInstance;
+                Ad.IsFilterTextboxEnabled = true;
                 return;
             }
-            if (!NewRecipe.ChildRecipes.Any(x => x.ChildRecipeId == recipe.Id) && NewRecipe != recipe) NewRecipe.ChildRecipes.Add(new RecipeHierarchy(NewRecipe, recipe));
+            if (recipe != null && !NewRecipe.ChildRecipes.Any(x => x.ChildRecipeId == recipe.Id) && NewRecipe != recipe) NewRecipe.ChildRecipes.Add(new RecipeHierarchy(NewRecipe, recipe));
         }
 
         [RelayCommand]
@@ -154,9 +162,14 @@ namespace Matsedeln.ViewModel
                 MessageBox.Show("Ange ett namn för receptet.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            if (NewRecipe.Ingredientlist.Count + NewRecipe.ChildRecipes.Count < 2)
+            if (Ad.RecipesList.Any(x => x.Name == NewRecipe.Name && !isEditingRecipe))
             {
-                MessageBox.Show("Lägg till minst två saker i receptet.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Det finns redan ettt recept med det namnet");
+                return;
+            }
+            if (NewRecipe.Ingredientlist.Count + NewRecipe.ChildRecipes.Count < 1 && NewRecipe.Name != "Färdigmat")
+            {
+                MessageBox.Show("Lägg till minst en sak i receptet.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (isAddingNewRecipe)
@@ -198,6 +211,8 @@ namespace Matsedeln.ViewModel
         private void RemoveIngredient(Ingredient ingredient)
         {
             if (ingredient == null)  return;
+            //ingredient.Good.IsInRecipe = false;
+            //WeakReferenceMessenger.Default.Send(new AppData.RefreshCollectionViewMessage());
             NewRecipe.Ingredientlist.Remove(ingredient);
             WeakReferenceMessenger.Default.Send(new AppData.RemoveHighlightBorderMessage(ingredient.Good));
         }

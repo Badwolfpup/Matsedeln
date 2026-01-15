@@ -9,6 +9,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.Text;
 using System.Windows;
@@ -42,6 +43,8 @@ namespace Matsedeln.ViewModel
             MenuListSource = new CollectionViewSource();
             MenuListSource.Source = Ad.MenuList;
             MenuListSource.Filter += FilterMenuEntry;
+            MenuListSource.View.SortDescriptions.Add(new SortDescription("Date", ListSortDirection.Ascending));
+
             WeakReferenceMessenger.Default.Register<AppData.AddRecipeToMenuMessage>(this, (r, m) => UpdateMenu(m.recipe));
             WeakReferenceMessenger.Default.Register<AppData.RefreshMenuEntrySourceMessage>(this, (r, m) => MenuListSource.View.Refresh());
         }
@@ -101,6 +104,7 @@ namespace Matsedeln.ViewModel
         {
             WeekToDisplay = WeekToDisplay.AddDays(-7);
             DisplayWeek();
+            MenuListSource.View.Refresh();  
 
         }
         [RelayCommand]
@@ -108,6 +112,7 @@ namespace Matsedeln.ViewModel
         {
             WeekToDisplay = WeekToDisplay.AddDays(7);
             DisplayWeek();
+            MenuListSource.View.Refresh();
         }
         [RelayCommand]
         private void LunchChanged(MenuEntry menuEntry)

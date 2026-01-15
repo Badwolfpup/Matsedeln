@@ -106,6 +106,11 @@ namespace Matsedeln.ViewModel
                 MessageBox.Show("Var god ange ett namn för varan.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
+            if (Ad.GoodsList.Any(x => x.Name == NewGood.Name && IsNewGood))
+            {
+                MessageBox.Show("Det finns redan en vara med det namnet");
+                return;
+            }
             if (IsGperDLEnabled == true && string.IsNullOrEmpty(GperDL))
             {
                 MessageBox.Show("Var god ange gram per deciliter för varan.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);

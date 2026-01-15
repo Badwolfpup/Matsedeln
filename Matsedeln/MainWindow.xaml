@@ -7,7 +7,7 @@
         xmlns:pages="clr-namespace:Matsedeln.Pages"
         xmlns:inter="http://schemas.microsoft.com/xaml/behaviors"
         mc:Ignorable="d"
-        Title="MainWindow" Height="1080" Width="1920" WindowStartupLocation="CenterScreen">
+        Title="MainWindow" ResizeMode="NoResize" Height="1080" Width="1920" WindowStartupLocation="CenterScreen">
 
         <Window.CommandBindings>
             <CommandBinding Command="ApplicationCommands.Paste" Executed="PasteExecuted" />

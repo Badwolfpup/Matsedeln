@@ -29,4 +29,7 @@ Kalendersida
 			Antal äta ute
 
 **TODO**
-Putsa på UI, grid på alla usercontrol?
+Putsa på UI
+Lägga till att datum utökas även när man växlar månader, inte vara i veckomenyn
+Fixa antal om man börjar med g så kan det bli noll i shoppinglista
+	-

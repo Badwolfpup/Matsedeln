@@ -6,6 +6,9 @@ using Matsedeln.Usercontrols;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Globalization;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -23,17 +26,22 @@ namespace Matsedeln.ViewModel
         {
             GoodsViewSource = new CollectionViewSource();
             GoodsViewSource.Source = Ad.GoodsList;
+            GoodsViewSource.View.Culture = new CultureInfo("sv-SE");
+            GoodsViewSource.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
             GoodsViewSource.Filter += FilterGoods;
             WeakReferenceMessenger.Default.Register<AppData.RefreshCollectionViewMessage>(this, (r, m) => GoodsViewSource.View.Refresh());
         }
 
         public CollectionViewSource GoodsViewSource { get; set; }
 
+
         private void FilterGoods(object sender, FilterEventArgs e)
         {
             if (e.Item is Goods good)
             {
-                if (!string.IsNullOrEmpty(Ad.FilterText))
+
+                if (good.IsInRecipe) e.Accepted = false;
+                else if (!string.IsNullOrEmpty(Ad.FilterText))
                 {
                     if (good.Name.IndexOf(Ad.FilterText, StringComparison.OrdinalIgnoreCase) >= 0)
                     {

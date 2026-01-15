@@ -10,7 +10,7 @@
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="LocalBoolToVis"></BooleanToVisibilityConverter>
     </UserControl.Resources>
-    <Grid Background="Cornsilk" Margin="10">
+    <Grid Background="Cornsilk" Margin="5 0 0 0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>

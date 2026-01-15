@@ -25,6 +25,7 @@ namespace Matsedeln.ViewModel
 
         public RecipePageViewModel()
         {
+            Ad.ShoppingList.Clear();
             RecipesViewSource = new CollectionViewSource();
             RecipesViewSource.Source = Ad.RecipesList;
             RecipesViewSource.Filter += FilterRecipe;

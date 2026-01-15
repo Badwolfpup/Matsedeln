@@ -8,31 +8,35 @@
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="IngredientPage">
-
+    <Page.Resources>
+        <local:GoodsnameConverter x:Key="GoodsnameConverter"></local:GoodsnameConverter>
+    </Page.Resources>
     <Grid Background="Cornsilk">
-        <ItemsControl x:Name="GoodsItemsControl" ItemsSource="{Binding GoodsViewSource.View}">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <WrapPanel Orientation="Horizontal"></WrapPanel>
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <Border BorderBrush="Transparent" BorderThickness="3" Margin="5" Padding="5" CornerRadius="10">
-                        <inter:Interaction.Triggers>
-                            <inter:EventTrigger EventName="MouseLeftButtonDown">
-                                <inter:InvokeCommandAction 
-                                   Command="{Binding DataContext.SelectBorderCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" 
-                                   CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=.}"/>
-                            </inter:EventTrigger>
-                        </inter:Interaction.Triggers>
-                        <StackPanel>
-                            <Image Width="100" Height="100" Source="{Binding ImagePath}"></Image>
-                            <TextBlock Text="{Binding Name}" HorizontalAlignment="Center"></TextBlock>
-                        </StackPanel>
-                    </Border>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ItemsControl x:Name="GoodsItemsControl" ItemsSource="{Binding GoodsViewSource.View}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal"></WrapPanel>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border BorderBrush="Transparent" BorderThickness="3" Margin="5" Width="170" Padding="5" CornerRadius="10">
+                            <inter:Interaction.Triggers>
+                                <inter:EventTrigger EventName="MouseLeftButtonDown">
+                                    <inter:InvokeCommandAction 
+                                       Command="{Binding DataContext.SelectBorderCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" 
+                                       CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=.}"/>
+                                </inter:EventTrigger>
+                            </inter:Interaction.Triggers>
+                            <StackPanel>
+                                <Image Width="100" Height="100" Source="{Binding ImagePath}"></Image>
+                                <TextBlock HorizontalAlignment="Center" FontSize="18" Text="{Binding Name, Converter={StaticResource GoodsnameConverter}}"></TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
     </Grid>
 </Page>
