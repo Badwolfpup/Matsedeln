@@ -5,14 +5,43 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:inter="http://schemas.microsoft.com/xaml/behaviors"
       xmlns:local="clr-namespace:Matsedeln.Pages"
+      xmlns:converter="clr-namespace:Matsedeln.Converters"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="IngredientPage">
     <Page.Resources>
         <local:GoodsnameConverter x:Key="GoodsnameConverter"></local:GoodsnameConverter>
+        <converter:ImageUrlConverter x:Key="ImageUrlConverter"></converter:ImageUrlConverter>
+        <converter:SelectedBorderConverter x:Key="SelectedBorderConverter"></converter:SelectedBorderConverter>
     </Page.Resources>
+    <inter:Interaction.Triggers>
+        <inter:EventTrigger EventName="Loaded">
+            <inter:InvokeCommandAction Command="{Binding LoadGoodsCommand}"/>
+        </inter:EventTrigger>
+    </inter:Interaction.Triggers>
     <Grid Background="Cornsilk">
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Margin="10 0 0 0" Background="Cornsilk" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal">
+            <Button Content="Recept" Command="{Binding ShowRecipesPageCommand}"></Button>
+            <Button Content="Kalender" Command="{Binding ShowMenuPageCommand}" ></Button>
+            <TextBox Margin="15 0 15 0" Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"/>
+
+        </StackPanel>
+        <Button Grid.Column="2" HorizontalAlignment="Right" Width="35" Height="35" Style="{StaticResource BtnNoMax}" 
+                BorderBrush="Transparent" BorderThickness="1" Background="PaleVioletRed" Command="{Binding DeleteGoodCommand}">
+            <Button.Content>
+                <TextBlock FontSize="16" FontFamily="Segoe MDL2 Assets" Text="&#xF8AA;"></TextBlock>
+            </Button.Content>
+            <Button.ToolTip>
+                <ToolTip ToolTipService.InitialShowDelay="200" ToolTipService.ShowDuration="2000">
+                    <TextBlock>Radera</TextBlock>
+                </ToolTip>
+            </Button.ToolTip>
+        </Button>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <ItemsControl x:Name="GoodsItemsControl" ItemsSource="{Binding GoodsViewSource.View}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -21,17 +50,17 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border BorderBrush="Transparent" BorderThickness="3" Margin="5" Width="170" Padding="5" CornerRadius="10">
+                        <Border BorderBrush="{Binding IsHighlighted, Converter={StaticResource SelectedBorderConverter}}" BorderThickness="3" Margin="5" Width="170" Padding="5" CornerRadius="10">
                             <inter:Interaction.Triggers>
                                 <inter:EventTrigger EventName="MouseLeftButtonDown">
                                     <inter:InvokeCommandAction 
                                        Command="{Binding DataContext.SelectBorderCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" 
-                                       CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=.}"/>
+                                       CommandParameter="{Binding}"/>
                                 </inter:EventTrigger>
                             </inter:Interaction.Triggers>
                             <StackPanel>
-                                <Image Width="100" Height="100" Source="{Binding ImagePath}"></Image>
-                                <TextBlock HorizontalAlignment="Center" FontSize="18" Text="{Binding Name, Converter={StaticResource GoodsnameConverter}}"></TextBlock>
+                                <Image Width="100" Height="100" Source="{Binding good.ImagePath, Converter={StaticResource ImageUrlConverter}}"></Image>
+                                <TextBlock HorizontalAlignment="Center" FontSize="18" Text="{Binding good.Name, Converter={StaticResource GoodsnameConverter}}"></TextBlock>
                             </StackPanel>
                         </Border>
                     </DataTemplate>

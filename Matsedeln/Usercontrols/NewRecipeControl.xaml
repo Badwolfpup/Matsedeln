@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:inter="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:local="clr-namespace:Matsedeln.Usercontrols"
+             xmlns:converter="clr-namespace:Matsedeln.Converters"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
 
@@ -13,6 +14,7 @@
         <BooleanToVisibilityConverter x:Key="ShowAddIngredients"/>
         <local:ShowAddIngredientBtnConverter x:Key="ShowAddIngredientBtnConverter"></local:ShowAddIngredientBtnConverter>
         <local:ToSweDecimalConverter x:Key="ToSweDecimalConverter"></local:ToSweDecimalConverter>
+        <converter:ImageUrlConverter x:Key="ImageUrlConverter"></converter:ImageUrlConverter>
     </UserControl.Resources>
 
     <Grid Background="Cornsilk">
@@ -43,16 +45,14 @@
             </Image>
             <StackPanel Visibility="{Binding ShowRest, Converter={StaticResource ShowAddIngredients}}">
                 <StackPanel Orientation="Horizontal" Margin="0 20 0 0">
-
-                    <TextBlock Margin="0 0 20 0" Text="{Binding NewIngredient.Good.Name}"/>
-                    <ComboBox x:Name="UnitComboBox" ItemsSource="{Binding NewIngredient.UnitOptions}" SelectedItem="{Binding NewIngredient.Unit}" Height="40" Width="130" HorizontalAlignment="Left">
-
-                    </ComboBox>
+                    <Image Width="50" Height="50" Source="{Binding NewIngredient.Good.ImagePath, Converter={StaticResource ImageUrlConverter}}" RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <TextBlock Margin="10 0 20 0" Text="{Binding NewIngredient.Good.Name}"/>
+                    <ComboBox x:Name="UnitComboBox" ItemsSource="{Binding NewIngredient.UnitOptions}" SelectedItem="{Binding NewIngredient.Unit}" Height="40" Width="130" HorizontalAlignment="Left"></ComboBox>
                     <TextBox TabIndex="1" Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}" Width="70" PreviewTextInput="Decimal_PreviewTextInput"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="{Binding AddingButtonText}" Margin="0 0 10 0" Width="100" Command="{Binding AddIngredientCommand}" Visibility="{Binding IsAddingNewIngredient, Converter={StaticResource ShowAddIngredients}}"  />
-                    <Button Content="Lägg till recept" Width="100" Command="{Binding AddRecipeCommand}"/>
+                    <Button Content="Lägg till ingrediens" Margin="0 0 10 0" Width="100" Command="{Binding AddIngredientCommand}" Visibility="{Binding IsAddingNewIngredient, Converter={StaticResource ShowAddIngredients}}"  />
+                    <Button Content="{Binding GoodOrRecipeButton}" Width="100" Command="{Binding ChangePageCommand}"/>
                 </StackPanel>
                 <Border BorderBrush="Transparent" BorderThickness="1" Margin="0,20,0,20" MinHeight="100" MaxHeight="400">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -63,7 +63,7 @@
                                         <Grid ToolTipService.ShowDuration="3000" ToolTipService.InitialShowDelay="2000">
                                             <Grid.ToolTip>
                                                 <ToolTip Placement="MousePoint" Background="Transparent" BorderThickness="0">
-                                                    <Image Source="{Binding Good.ImagePath}" 
+                                                    <Image Source="{Binding Good.ImagePath, Converter={StaticResource ImageUrlConverter}}" 
                                                            Width="200" Height="200" 
                                                            RenderOptions.BitmapScalingMode="HighQuality" />
                                                 </ToolTip>
@@ -78,7 +78,7 @@
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="50"/>
                                                 </Grid.ColumnDefinitions>
-                                                <Image Grid.Column="0" Width="50" Height="50" Source="{Binding Good.ImagePath}"/>
+                                            <Image Grid.Column="0" Width="50" Height="50" Source="{Binding Good.ImagePath, Converter={StaticResource ImageUrlConverter}}"/>
                                             <!--<StackPanel Orientation="Horizontal" Margin="10 0 0 0" Grid.Column="1">
                                                     <TextBlock Text="{Binding Quantity, Converter={StaticResource ToSweDecimalConverter}}" />
                                                     <TextBlock Text="{Binding Unit}" />
@@ -96,7 +96,7 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                             <StackPanel>
-                                <ItemsControl ItemsSource="{Binding NewRecipe.ChildRecipes}">
+                                <ItemsControl ItemsSource="{Binding NewRecipe.recipe.ChildRecipes}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Grid ToolTipService.InitialShowDelay="2000" ToolTipService.ShowDuration="3000">
@@ -108,7 +108,7 @@
                                                 <Grid.ToolTip>
                                                     <local:ImageTooltip ImageSource="{Binding ChildRecipe.ImagePath}"/>
                                                 </Grid.ToolTip>
-                                                <Image Grid.Column="0" Width="50" Height="50" Source="{Binding ChildRecipe.ImagePath}"></Image>
+                                                <Image Grid.Column="0" Width="50" Height="50" Source="{Binding ChildRecipe.ImagePath, Converter={StaticResource ImageUrlConverter}}"></Image>
                                                 <TextBlock Grid.Column="1" Margin="10 0 0 0" Text="{Binding ChildRecipe.Name}"/>
                                                 <Button Grid.Column="2" Content="X" Width="30" MinWidth="30" Command="{Binding DataContext.RemoveRecipeCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
                                             </Grid>
@@ -121,8 +121,8 @@
 
                 </Border>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,10,0,0">
-                    <Button Content="{Binding AddingRecipeButtonText}" Width="100" Command="{Binding AddNewRecipeCommand}" />
-                    <Button Content="Avbryt" Width="100" Command="{Binding AbortNewRecipeCommand}" />
+                    <Button Content="Lägg till recept" Width="100" Command="{Binding AddRecipeCommand}" />
+                    <Button Content="Avbryt" Width="100" Command="{Binding ResetUserControlCommand}" />
                 </StackPanel>
             </StackPanel>
         </StackPanel>

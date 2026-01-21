@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
-using Matsedeln.Models;
 using Matsedeln.ViewModel;
 using System;
 using System.Collections.Generic;

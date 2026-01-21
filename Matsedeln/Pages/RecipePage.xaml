@@ -5,14 +5,43 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:Matsedeln.Pages"
       xmlns:inter="http://schemas.microsoft.com/xaml/behaviors"
+      xmlns:converter="clr-namespace:Matsedeln.Converters"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="RecipePage">
     <Page.Resources>
         <local:RecipeNameConverter x:Key="RecipeNameConverter"></local:RecipeNameConverter>
+        <converter:ImageUrlConverter x:Key="ImageUrlConverter"></converter:ImageUrlConverter>
+        <converter:SelectedBorderConverter x:Key="SelectedBorderConverter"></converter:SelectedBorderConverter>
     </Page.Resources>
+    <inter:Interaction.Triggers>
+        <inter:EventTrigger EventName="Loaded">
+            <inter:InvokeCommandAction Command="{Binding LoadRecipeCommand}"/>
+        </inter:EventTrigger>
+    </inter:Interaction.Triggers>
     <Grid Background="Cornsilk">
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Margin="10 0 0 0" Background="Cornsilk" Orientation="Horizontal">
+            <Button Content="Ingrediens" Command="{Binding ShowIngredientsPageCommand}"></Button>
+            <Button Content="Kalender" Command="{Binding ShowMenuPageCommand}" ></Button>
+            <TextBox Margin="15 0 15 0" Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"/>
+
+        </StackPanel>
+        <Button HorizontalAlignment="Right" Width="35" Height="35" Style="{StaticResource BtnNoMax}" 
+                BorderBrush="Transparent" BorderThickness="1" Background="PaleVioletRed" Command="{Binding DeleteRecipeCommand}">
+            <Button.Content>
+                <TextBlock FontSize="16" FontFamily="Segoe MDL2 Assets" Text="&#xF8AA;"></TextBlock>
+            </Button.Content>
+            <Button.ToolTip>
+                <ToolTip ToolTipService.InitialShowDelay="200" ToolTipService.ShowDuration="2000">
+                    <TextBlock>Radera</TextBlock>
+                </ToolTip>
+            </Button.ToolTip>
+        </Button>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <ItemsControl x:Name="RecipeItemsControl" ItemsSource="{Binding RecipesViewSource.View}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -21,18 +50,22 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border BorderBrush="Transparent" BorderThickness="3" Width="200" Margin="5" Padding="5" CornerRadius="10" MouseDown="Select_Border">
+                        <Border BorderThickness="3" Width="200" Margin="5" Padding="5" CornerRadius="10" BorderBrush="{Binding IsHighlighted, Converter={StaticResource SelectedBorderConverter}}">
                             <inter:Interaction.Triggers>
                                 <inter:EventTrigger EventName="MouseRightButtonDown">
                                     <inter:InvokeCommandAction Command="{Binding DataContext.EditRecipeCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
                                 </inter:EventTrigger>
+                                <inter:EventTrigger EventName="MouseLeftButtonDown">
+                                    <inter:InvokeCommandAction Command="{Binding DataContext.SelectBorderCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
+                                </inter:EventTrigger>
                             </inter:Interaction.Triggers>
+                            
                             <StackPanel ToolTipService.InitialShowDelay="1000">
                                 <StackPanel.ToolTip>
-                                    <TextBlock Text="{Binding Name}"/>
+                                    <TextBlock Text="{Binding Recipe.Name}"/>
                                 </StackPanel.ToolTip>
-                                <Image Width="100" Height="100" Source="{Binding ImagePath}"></Image>
-                                <TextBlock Text="{Binding Name, Converter={StaticResource RecipeNameConverter}}" HorizontalAlignment="Center"></TextBlock>
+                                <Image Width="100" Height="100" Source="{Binding recipe.ImagePath, Converter={StaticResource ImageUrlConverter}}"></Image>
+                                <TextBlock Text="{Binding recipe.Name, Converter={StaticResource RecipeNameConverter}}" HorizontalAlignment="Center"></TextBlock>
                             </StackPanel>
                         </Border>
                     </DataTemplate>

@@ -1,9 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
-using Matsedeln.Models;
 using Matsedeln.Usercontrols;
 using Matsedeln.Usercontrols;
 using Matsedeln.ViewModel;
+using MatsedelnShared.Models;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections.Generic;

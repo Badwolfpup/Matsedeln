@@ -1,10 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using Matsedeln.Models;
 using Matsedeln.Pages;
 using Matsedeln.Usercontrols;
 using Matsedeln.Utils;
+using MatsedelnShared.Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -59,19 +59,19 @@ namespace Matsedeln.ViewModel
 
         private async void UpdateMenu(Recipe recipe)
         {
-            if (Ad.CurrentUserControl is not WeeklyMenuControl) return;
-            if (lunchordinner)
-            {
-                currentEntry.LunchRecipe = recipe;
-                if (!await Ad.MenuService.UpdateLunchEntry(currentEntry)) MessageBox.Show("Kunde inte uppdatera maträtt för lunch.");
-                Ad.CurrentPage = Ad.MenuPageInstance;
-            }
-            else
-            {
-                currentEntry.DinnerRecipe = recipe;
-                if (!await Ad.MenuService.UpdateDinnerEntry(currentEntry)) MessageBox.Show("Kunde inte uppdatera maträtt för middag.");
-                Ad.CurrentPage = Ad.MenuPageInstance;
-            }
+            //if (Ad.CurrentUserControl is not WeeklyMenuControl) return;
+            //if (lunchordinner)
+            //{
+            //    currentEntry.LunchRecipe = recipe;
+            //    if (!await Ad.MenuService.UpdateLunchEntry(currentEntry)) MessageBox.Show("Kunde inte uppdatera maträtt för lunch.");
+            //    Ad.CurrentPage = Ad.MenuPageInstance;
+            //}
+            //else
+            //{
+            //    currentEntry.DinnerRecipe = recipe;
+            //    if (!await Ad.MenuService.UpdateDinnerEntry(currentEntry)) MessageBox.Show("Kunde inte uppdatera maträtt för middag.");
+            //    Ad.CurrentPage = Ad.MenuPageInstance;
+            //}
             WeakReferenceMessenger.Default.Send(new AppData.RefreshMenuEntrySourceMessage());
         }
 
@@ -80,14 +80,14 @@ namespace Matsedeln.ViewModel
         {
             if (menuEntry == null) return;
             menuEntry.LunchRecipe = null;
-            if (!await Ad.MenuService.UpdateLunchEntry(menuEntry)) MessageBox.Show("Kunde inte radera maträtt för lunch.");
+            //if (!await Ad.MenuService.UpdateLunchEntry(menuEntry)) MessageBox.Show("Kunde inte radera maträtt för lunch.");
         }
         [RelayCommand]
         public async Task RemoveDinner(MenuEntry menuEntry)
         {
             if (menuEntry == null) return;
             menuEntry.DinnerRecipe = null;
-            if (!await Ad.MenuService.UpdateDinnerEntry(menuEntry)) MessageBox.Show("Kunde inte radera maträtt för dinner.");
+            //if (!await Ad.MenuService.UpdateDinnerEntry(menuEntry)) MessageBox.Show("Kunde inte radera maträtt för dinner.");
 
         }
 

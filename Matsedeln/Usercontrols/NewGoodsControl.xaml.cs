@@ -17,38 +17,21 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Matsedeln.Utils;
-using Matsedeln.Models;
 using Matsedeln.ViewModel;
 using CommunityToolkit.Mvvm.Messaging;
+using MatsedelnShared.Models;
 
 namespace Matsedeln.Usercontrols
 {
     /// <summary>
     /// Interaction logic for NewGoodsControl.xaml
     /// </summary>
-    public partial class NewGoodsControl : UserControl, INotifyPropertyChanged
+    public partial class NewGoodsControl : UserControl
     {
-        #region PropertyChanged
-        public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-        #endregion
-
-
-        public AppData Ad { get; } = AppData.Instance;
         public NewGoodsControl()
         {
             InitializeComponent();
             DataContext = new NewGoodsControlViewModel();
-        }
-
-        public NewGoodsControl(Goods good)
-        {
-            InitializeComponent();
-            DataContext = new NewGoodsControlViewModel();
-
         }
 
         public void CheckIfDigit_preview(object sender, TextCompositionEventArgs e)

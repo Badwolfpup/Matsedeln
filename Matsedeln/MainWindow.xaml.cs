@@ -1,10 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
-using Matsedeln.Models;
-using Matsedeln.Pages;
+using Matsedeln.Messengers;
 using Matsedeln.Pages;
 using Matsedeln.Usercontrols;
-using Matsedeln.Usercontrols;
-using Matsedeln.Utils;
 using Matsedeln.Utils;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -50,6 +47,21 @@ namespace Matsedeln
             InitializeComponent();
             DataContext = new MainViewModel();
             LoadDB();
+            WeakReferenceMessenger.Default.Register<ToastMessage>(this, async (r, m) =>
+            {
+                // 1. Create and add the toast
+                var toast = new ToastMessageControl { Message = m.Message };
+                ToastContainer.Children.Add(toast);
+
+                // 2. Wait for the duration (this doesn't block the UI thread)
+                await Task.Delay(TimeSpan.FromSeconds(m.DurationInSeconds));
+
+                // 3. Remove it (No need for Dispatcher.Invoke because await returns us to the UI thread!)
+                if (ToastContainer.Children.Contains(toast))
+                {
+                    ToastContainer.Children.Remove(toast);
+                }
+            });
         }
 
         private async void LoadDB()

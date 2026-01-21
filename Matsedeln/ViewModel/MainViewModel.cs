@@ -1,17 +1,19 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using Matsedeln.Models;
+using Matsedeln.Messengers;
 using Matsedeln.Pages;
 using Matsedeln.Usercontrols;
 using Matsedeln.Utils;
 using Matsedeln.ViewModel;
+using MatsedelnShared.Models;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.Reflection;
 using System.Text;
 using System.Windows;
@@ -37,6 +39,10 @@ namespace Matsedeln
 
         #region Properties
         [ObservableProperty]
+        private Page currentPage;
+        [ObservableProperty]
+        private UserControl currentUserControl;
+        [ObservableProperty]
         private bool showGoodsUsercontrol = false;
         [ObservableProperty]
         private bool showRecipeUsercontrol = false;
@@ -45,150 +51,26 @@ namespace Matsedeln
 
         public MainViewModel()
         {
-            WeakReferenceMessenger.Default.Register<AppData.PassGoodsToUCMessage>(this, (r, m) => selectedGood = m.good);
+            WeakReferenceMessenger.Default.Register<ChangePageMessenger>(this, (r, m) => ChangePage(m.TypeOfPage));
+            WeakReferenceMessenger.Default.Register<ChangeUsercontrolMessenger>(this, (r, m) => ChangeUserControl(m.TypeOfControl));
+            CurrentPage = new IngredientPage();
+            CurrentUserControl = new NewGoodsControl();
         }
 
-        [RelayCommand]
-        private void ShowRecipesPage()
+        private void ChangePage(string page)
         {
-            Ad.CurrentPage = Ad.RecipePageInstance;
-            Ad.CurrentUserControl = new ShoppingListControl();
-            Ad.FilterText = string.Empty;
-            Ad.IsFilterTextboxEnabled = false;
-            WeakReferenceMessenger.Default.Send(new AppData.RemoveAllHighlightBorderMessage());
+            if (page == "goods") CurrentPage = new IngredientPage();
+            else if (page == "recipe") CurrentPage = new RecipePage();
+            else if (page == "menu") CurrentPage = new MenuPage();
         }
 
-        [RelayCommand]
-        private void ShowIngredientsPage()
+        private void ChangeUserControl(string control)
         {
-            Ad.CurrentPage = Ad.IngredientPageInstance;
-            Ad.CurrentUserControl = new NewGoodsControl();
-            Ad.FilterText = string.Empty;
-            Ad.IsFilterTextboxEnabled = true;
-            if (Ad.CurrentUserControl is ShoppingListControl shop)
-            {
-                shop.ShowIngredients = false;
-                shop.ShowShoppinglist = false;
-            }
-            WeakReferenceMessenger.Default.Send(new AppData.RemoveAllHighlightBorderMessage());
+            if (control == "goods") CurrentUserControl = new NewGoodsControl();
+            else if (control == "recipe") CurrentUserControl = new NewRecipeControl();
+            else if (control == "shopping") CurrentUserControl = new ShoppingListControl();
+            else if (control == "menup") CurrentUserControl = new WeeklyMenuControl(); 
         }
-
-        [RelayCommand]
-        private void ShowMenuPage()
-        {
-            Ad.CurrentPage = Ad.MenuPageInstance;
-            Ad.CurrentUserControl = new WeeklyMenuControl();
-            WeakReferenceMessenger.Default.Send(new AppData.RemoveAllHighlightBorderMessage());
-        }
-
-        [RelayCommand]
-        private void FilterGoods()
-        {
-            WeakReferenceMessenger.Default.Send(new AppData.RefreshCollectionViewMessage());
-        }
-
-
-        [RelayCommand]
-        private async void DeleteGoodOrRecipe(object sender)
-        {
-            if (Ad.CurrentPage is IngredientPage)
-            {
-                if (selectedGood == null)
-                {
-                    MessageBox.Show("Du måste välja något innan du kan radera.");
-                    return;
-                }
-                MessageBoxResult result = MessageBox.Show("Vill du verkligen radera denna vara?", "Confirm delettion", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                if (result == MessageBoxResult.Yes)
-                {
-                    if (!await Ad.GoodsService.DeleteGoods(selectedGood, Ad.GoodsList))
-                    {
-                        MessageBox.Show("Det gick inte att radera varan");
-                        return;
-                    }
-                    Ad.GoodsList.Remove(selectedGood);
-                    var goodtoremove = Ad.RecipesList.Where(x => x.Ingredientlist.Any(y => y.GoodsId == selectedGood.Id)).Select(y => y.Ingredientlist).ToList();
-                    foreach (var item in goodtoremove)
-                    {
-                        var ing = item.FirstOrDefault(x => x.GoodsId == selectedGood.Id);
-
-                        item.Remove(ing);
-                    }
-                    WeakReferenceMessenger.Default.Send(new AppData.RefreshCollectionViewMessage());
-                    WeakReferenceMessenger.Default.Send(new AppData.PassGoodsToUCMessage(new Goods()));
-                }
-            }
-            else
-            {
-                var allBorders = FindAllBorders(Ad.RecipePageInstance.RecipeItemsControl);
-                var sum = allBorders.Sum(x => x.BorderBrush == Brushes.Red ? 1 : 0);
-                if (sum == 0)
-                {
-                    MessageBox.Show("Du måste välja något innan du kan radera.");
-                    return;
-                }
-                else if (sum > 1)
-                {
-                    MessageBox.Show("Du får bara välja ett recept innan du kan radera.");
-                    return;
-                }
-                var SelectedBorder = allBorders.FirstOrDefault(x => x.DataContext is Recipe && x.BorderBrush == Brushes.Red);
-                if (SelectedBorder is Border b && b.DataContext is Recipe SelectedRecipe)
-                {
-                    if (SelectedRecipe == null)
-                    {
-                        MessageBox.Show("Det gick inte att radera. Problem att hitta datacontext");
-                        return;
-                    }
-                    MessageBoxResult result = MessageBox.Show("Vill du verkligen radera detta recept?", "Confirm delettion", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                    if (result == MessageBoxResult.Yes)
-                    {
-                        if (!await Ad.RecipeService.DeleteRecipe(SelectedRecipe, Ad.RecipesList))
-                        {
-                            MessageBox.Show("Det gick inte att radera receptet");
-                            return;
-                        }
-
-                        Ad.RecipesList.Remove(SelectedRecipe);
-                        foreach (var item in Ad.MenuList)
-                        {
-                            if (item.LunchRecipeId == SelectedRecipe.Id) item.LunchRecipe = null;
-                            if (item.DinnerRecipeId == SelectedRecipe.Id) item.DinnerRecipe = null;
-                        }
-                        WeakReferenceMessenger.Default.Send(new AppData.RefreshMenuEntrySourceMessage());
-                        WeakReferenceMessenger.Default.Send(new AppData.ResetShoppinglistUCMessages());
-                        ((RecipePageViewModel)Ad.RecipePageInstance.DataContext).RecipesViewSource.View.Refresh();
-                    }
-                }
-                else
-                {
-                    MessageBox.Show("Det gick inte att radera. Problem att hitta border");
-                    return;
-                }
-            }
-        }
-
-        public IEnumerable<Border> FindAllBorders(DependencyObject parent)
-        {
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
-            {
-                var child = VisualTreeHelper.GetChild(parent, i);
-
-                // If this child is a Border, yield it
-                if (child is Border border)
-                {
-                    yield return border;
-                }
-
-                // Recurse into children
-                foreach (var descendant in FindAllBorders(child))
-                {
-                    yield return descendant;
-                }
-            }
-        }
-
-
     }
 
 }

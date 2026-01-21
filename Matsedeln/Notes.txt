@@ -29,7 +29,15 @@ Kalendersida
 			Antal äta ute
 
 **TODO**
+Kan inte testa NewRecipeUserControl innan RecipePage är klar
+Lägger inte till ingrediesner poå receipcontrol
+
 Putsa på UI
 Lägga till att datum utökas även när man växlar månader, inte vara i veckomenyn
 Fixa antal om man börjar med g så kan det bli noll i shoppinglista
-	-
+
+Fixa alla api calls
+Ersätt AppData
+	Gör messengers till egna klasser? Eller en static för getter
+	Varje page/UC laddar relevant från DB, ingen central lista
+	Använd root för att accessa code-in-behind

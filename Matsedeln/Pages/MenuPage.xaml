@@ -6,25 +6,33 @@
       xmlns:local="clr-namespace:Matsedeln.Pages"
       xmlns:inter="http://schemas.microsoft.com/xaml/behaviors"
       xmlns:user="clr-namespace:Matsedeln.Usercontrols"
+      xmlns:converter="clr-namespace:Matsedeln.Converters"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="MenuPage">
     <Page.Resources>
         <local:DateConverter x:Key="DateConverter"></local:DateConverter>
+        <converter:ImageUrlConverter x:Key="ImageUrlConverter"></converter:ImageUrlConverter>
     </Page.Resources>
     <Grid Background="#FFFDFDFD">
 
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-            <Button Grid.Column="0" Content="&lt;" Style="{StaticResource BtnNoMax}" Width="30" Command="{Binding PrevMonthCommand}"></Button>
-            <TextBlock Margin="20 0 20 0" HorizontalAlignment="Center" Grid.Column="1" FontSize="20" Text="{Binding Time}"/>
-            <Button Grid.Column="2" Content="&gt;" Style="{StaticResource BtnNoMax}" Width="30" Command="{Binding NextMonthCommand}"></Button>
+        <StackPanel Margin="0 0 0 10" Background="Cornsilk" Orientation="Horizontal">
+            <Button Margin="0 0 20 0" Content="Ingrediens" Command="{Binding ShowIngredientsPageCommand}"></Button>
+            <Button Content="Recept" Command="{Binding ShowRecipesPageCommand}"></Button>
         </StackPanel>
 
-        <ItemsControl ItemsSource="{Binding MenuEntrySource.View}" Grid.Row="1">
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
+            <Button Grid.Column="0" Content="&lt;" Style="{StaticResource BtnNoMax}" Width="30" Command="{Binding ChangeMonthCommand}" CommandParameter="false"></Button>
+            <TextBlock Margin="20 0 20 0" HorizontalAlignment="Center" Grid.Column="1" FontSize="20" Text="{Binding Time}"/>
+            <Button Grid.Column="2" Content="&gt;" Style="{StaticResource BtnNoMax}" Width="30" Command="{Binding ChangeMonthCommand}" CommandParameter="true"></Button>
+        </StackPanel>
+
+        <ItemsControl ItemsSource="{Binding MenuEntrySource.View}" Grid.Row="2">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <UniformGrid  Columns="7" Rows="6"></UniformGrid>
@@ -40,7 +48,7 @@
                                     <StackPanel.ToolTip>
                                         <user:ImageTooltip RecipeName="{Binding LunchRecipe.Name}" ImageSource="{Binding LunchRecipe.ImagePath}"/>
                                     </StackPanel.ToolTip>
-                                    <Image Margin="5" Width="40" Height="40" Stretch="Fill" Source="{Binding LunchRecipe.ImagePath}"></Image>
+                                    <Image Margin="5" Width="40" Height="40" Stretch="Fill" Source="{Binding LunchRecipe.ImagePath, Converter={StaticResource ImageUrlConverter}}"></Image>
                                     <TextBlock Text="{Binding LunchRecipe.Name}"/>
                                 </StackPanel>
                             </Border>

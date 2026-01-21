@@ -5,12 +5,14 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:inter="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:local="clr-namespace:Matsedeln.Usercontrols"
+             xmlns:converter="clr-namespace:Matsedeln.Converters"
              mc:Ignorable="d" 
              d:DesignHeight="650" d:DesignWidth="800">
-
-
-
-        <Grid Background="Cornsilk">
+    <UserControl.Resources>
+        <converter:WebImagePathConverter x:Key="WebImagePathConverter"></converter:WebImagePathConverter>
+        <converter:ImageUrlConverter x:Key="ImageUrlConverter"></converter:ImageUrlConverter>
+    </UserControl.Resources>
+    <Grid Background="Cornsilk">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -49,17 +51,17 @@
 
                 <TextBlock Text="Gram per dl:"/>
                 <StackPanel Orientation="Horizontal">
-                    <CheckBox x:Name="CboxGperDL" IsChecked="{Binding IsGperDLEnabled}" Command="{Binding ResetGperDLCommand}" CommandParameter="{Binding ElementName=CboxGperDL, Path=IsChecked}" VerticalContentAlignment="Center"/>
+                    <CheckBox x:Name="CboxGperDL" IsChecked="{Binding IsGperDLEnabled}"  VerticalContentAlignment="Center"/>
                     <TextBox Text="{Binding GperDL, UpdateSourceTrigger=PropertyChanged}" Width="75" IsEnabled="{Binding ElementName=CboxGperDL, Path=IsChecked}" PreviewTextInput="CheckIfDigit_preview"/>
                 </StackPanel>
                 <TextBlock Text="Gram per st:"/>
                 <StackPanel Orientation="Horizontal">
-                    <CheckBox x:Name="CboxGperST" IsChecked="{Binding IsGperSTEnabled}" Command="{Binding ResetGperSTCommand}" CommandParameter="{Binding ElementName=CboxGperST, Path=IsChecked}" VerticalContentAlignment="Center"></CheckBox>
+                    <CheckBox x:Name="CboxGperST" IsChecked="{Binding IsGperSTEnabled}" VerticalContentAlignment="Center"></CheckBox>
                     <TextBox Text="{Binding GperST, UpdateSourceTrigger=PropertyChanged}" Width="75" IsEnabled="{Binding ElementName=CboxGperST, Path=IsChecked}" PreviewTextInput="CheckIfDigit_preview"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
                     <Button Content="{Binding ButtonText}" Width="100" Command="{Binding AddGoodsToDBCommand}" />
-                    <Button Content="Avbryt" Width="100" Command="{Binding AbortAddGoodsCommand}" />
+                    <Button Content="Avbryt" Width="100" Command="{Binding ResetUserControlCommand}" />
                 </StackPanel>
             </StackPanel>
         </StackPanel>

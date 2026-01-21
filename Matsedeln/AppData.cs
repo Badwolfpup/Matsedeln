@@ -1,8 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging.Messages;
-using Matsedeln.Models;
 using Matsedeln.Pages;
 using Matsedeln.Utils;
+using MatsedelnShared.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -35,23 +35,7 @@ namespace Matsedeln
         public ObservableCollection<Ingredient> ShoppingList { get; set; } = new ObservableCollection<Ingredient>();
         public ObservableCollection<MenuEntry> MenuList { get; set; } = new ObservableCollection<MenuEntry>();
         
-        private IngredientPage _ingredientPageInstance;
-        public IngredientPage IngredientPageInstance => _ingredientPageInstance ??= new IngredientPage();
-
-        private RecipePage _recipePageInstance;
-        public RecipePage RecipePageInstance => _recipePageInstance ??= new RecipePage();
-
-        private MenuPage _menuPageInstance;
-        public MenuPage MenuPageInstance => _menuPageInstance ??= new MenuPage();
-
-        public GoodsService GoodsService { get; } = new GoodsService();
-
-        public RecipeService RecipeService { get; } = new RecipeService();
-
-        public MenuService MenuService { get; } = new MenuService();
-
-        [ObservableProperty]
-        private bool isFilterTextboxEnabled = true;
+        
         [ObservableProperty]
         private Page currentPage;
         [ObservableProperty]
@@ -90,18 +74,21 @@ namespace Matsedeln
         public record PasteImageMessage();
 
         #endregion
-        [ObservableProperty]
-        private string filterText = string.Empty;
+
 
         public async Task LoadDataFromDB()
         {
             try
             {
-                GoodsList = await GoodsService.GetGoods();
-
-                RecipesList = await RecipeService.GetRecipes();
-
-                MenuList = await MenuService.GetMenuItems();
+                var api = new ApiService();
+                var goods = await api.GetListAsync<Goods>("api/goods");
+                if (goods != null) GoodsList = new ObservableCollection<Goods>(goods);
+                api = new ApiService();
+                var recipe = await api.GetListAsync<Recipe>("api/recipe");
+                if (recipe != null) RecipesList = new ObservableCollection<Recipe>(recipe);
+                api = new ApiService();
+                var menu = await api.GetListAsync<MenuEntry>($"api/menuentry/{DateTime.Now}");
+                if (menu != null) MenuList = new ObservableCollection<MenuEntry>(menu);
             }
             catch (Exception ex)
             {

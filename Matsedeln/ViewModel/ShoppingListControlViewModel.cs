@@ -1,7 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using Matsedeln.Models;
+using Matsedeln.Usercontrols;
+using MatsedelnShared.Models;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -55,6 +56,61 @@ namespace Matsedeln.ViewModel
         {
             if (Ad.ShoppingList.Contains(ingredient)) Ad.ShoppingList.Remove(ingredient);
         }
+
+        private void AddIngredientToShoppinglist(Recipe recipe)
+        {
+            if (Ad.CurrentUserControl is ShoppingListControl shop && shop.ShowShoppinglist) return;
+
+            var ingredients = recipe.ChildRecipes.SelectMany(x => x.ChildRecipe.Ingredientlist).ToList();
+            if (ingredients == null) ingredients = new List<Ingredient>();
+            foreach (var item in recipe.Ingredientlist)
+            {
+                ingredients.Add(item);
+            }
+            ingredients.ForEach(ingredient =>
+            {
+                if (!Ad.ShoppingList.Any(i => i.Good.Name == ingredient.Good.Name))
+                {
+                    Ad.ShoppingList.Add(new Ingredient(ingredient));
+                }
+                else
+                {
+                    var existingItem = Ad.ShoppingList.First(i => i.Good.Name == ingredient.Good.Name);
+                    existingItem.QuantityInGram += ingredient.QuantityInGram;
+                    existingItem.QuantityInDl += ingredient.QuantityInDl;
+                    existingItem.QuantityInSt += ingredient.QuantityInSt;
+                    existingItem.QuantityInMsk += ingredient.QuantityInMsk;
+                    existingItem.QuantityInTsk += ingredient.QuantityInTsk;
+                    existingItem.Quantity += ingredient.GetQuantity(existingItem);
+                    existingItem.ConvertToOtherUnits();
+                }
+            });
+        }
+
+        private void RemoveIngredientsFromShoppinglist(Recipe recipe)
+        {
+            if (Ad.CurrentUserControl is ShoppingListControl shop && shop.ShowShoppinglist) return;
+
+            recipe.Ingredientlist.ToList().ForEach(ingredient =>
+            {
+                var itemToRemove = Ad.ShoppingList.FirstOrDefault(i => i.Good.Name == ingredient.Good.Name);
+                if (itemToRemove != null)
+                {
+                    if (itemToRemove.QuantityInGram == ingredient.QuantityInGram) Ad.ShoppingList.Remove(itemToRemove);
+                    else
+                    {
+                        itemToRemove.QuantityInGram -= ingredient.QuantityInGram;
+                        itemToRemove.QuantityInDl -= ingredient.QuantityInDl;
+                        itemToRemove.QuantityInSt -= ingredient.QuantityInSt;
+                        itemToRemove.QuantityInMsk -= ingredient.QuantityInMsk;
+                        itemToRemove.QuantityInTsk -= ingredient.QuantityInTsk;
+                        itemToRemove.Quantity -= ingredient.GetQuantity(itemToRemove);
+                        itemToRemove.ConvertToOtherUnits();
+                    }
+                }
+            });
+        }
+
 
         private void CopyList()
         {

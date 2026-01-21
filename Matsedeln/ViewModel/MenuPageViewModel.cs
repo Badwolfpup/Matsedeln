@@ -1,10 +1,13 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using Matsedeln.Models;
-using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
+using Matsedeln.Messengers;
+using Matsedeln.Utils;
+using Matsedeln.Wrappers;
+using MatsedelnShared.Models;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Text;
@@ -14,10 +17,12 @@ namespace Matsedeln.ViewModel
 {
     partial class MenuPageViewModel: ObservableObject
     {
-        public AppData Ad { get; } = AppData.Instance;
 
+        [ObservableProperty]
+        private CollectionViewSource menuEntrySource;
 
-        public CollectionViewSource MenuEntrySource { get; set; }
+        [ObservableProperty]
+        private ObservableCollection<MenuEntry> menuList;
 
         [ObservableProperty]
         private string month = DateTime.Now.ToString("MMMM");
@@ -31,17 +36,30 @@ namespace Matsedeln.ViewModel
 
         public MenuPageViewModel()
         {
-            CreateMonth();
             UpdateRange();
-            MenuEntrySource = new CollectionViewSource();
-            MenuEntrySource.Source = Ad.MenuList;
-            MenuEntrySource.Filter += FilterMenuEntry;
-            MenuEntrySource.View.SortDescriptions.Add(new SortDescription("Date", ListSortDirection.Ascending));
-            MenuEntrySource.View.Refresh();
+            GetMenuFromDb();
             WeakReferenceMessenger.Default.Register<AppData.RefreshMenuEntrySourceMessage>(this, (r, m) => MenuEntrySource.View.Refresh());
 
         }
 
+
+        private async void GetMenuFromDb()
+        {
+            var api = new ApiService();
+            var list = await api.GetListAsync<MenuEntry>($"api/menuentry/{currentdate}");
+            if (list == null) { MenuList = new ObservableCollection<MenuEntry>(); }
+            else MenuList = new ObservableCollection<MenuEntry>(list);
+            SetSource();
+        }
+
+        private void SetSource()
+        {
+            MenuEntrySource = new CollectionViewSource();
+            MenuEntrySource.Source = MenuList;
+            MenuEntrySource.Filter += FilterMenuEntry;
+            MenuEntrySource.View.SortDescriptions.Add(new SortDescription("Date", ListSortDirection.Ascending));
+            MenuEntrySource.View.Refresh();
+        }
 
         private void FilterMenuEntry(object sender, FilterEventArgs e)
         {
@@ -51,30 +69,30 @@ namespace Matsedeln.ViewModel
             }
         }
 
-        private async void CreateMonth()
-        {
-            await Ad.MenuService.AddEmptyDays(currentdate);
-            GetTime();
-        }
-
         [RelayCommand]
-        public async Task PrevMonth()
+        public async Task ChangeMonth(string change)
         {
-            currentdate = currentdate.AddMonths(-1);
+            currentdate = currentdate.AddMonths((change == "true" ? 1 : -1));
             UpdateRange();
-            await Ad.MenuService.AddEmptyDays(currentdate);
+            var api = new ApiService();
+            var list = await api.GetListAsync<MenuEntry>($"api/menu/{currentdate}");
+            if (list == null) { MenuList = new ObservableCollection<MenuEntry>(); }
+            else MenuList = new ObservableCollection<MenuEntry>(list);
             GetTime();
             MenuEntrySource.View.Refresh();
         }
-        [RelayCommand]
-        public async Task NextMonth()
-        {
-            currentdate = currentdate.AddMonths(1);
-            UpdateRange();
-            await Ad.MenuService.AddEmptyDays(currentdate);
-            GetTime();
-            MenuEntrySource.View.Refresh();
-        }
+        //[RelayCommand]
+        //public async Task NextMonth()
+        //{
+        //    currentdate = currentdate.AddMonths(1);
+        //    UpdateRange();
+        //    var api = new ApiService();
+        //    var list = await api.GetListAsync<MenuEntry>($"api/menu/{currentdate}");
+        //    if (list == null) { MenuList = new ObservableCollection<MenuEntry>(); }
+        //    else MenuList = new ObservableCollection<MenuEntry>(list);
+        //    GetTime();
+        //    MenuEntrySource.View.Refresh();
+        //}
 
         private void UpdateRange()
         {
@@ -91,6 +109,18 @@ namespace Matsedeln.ViewModel
         {
             Month = currentdate.ToString("MMMM");
             Year = currentdate.ToString("yyyy");
+        }
+
+        [RelayCommand]
+        public void ShowRecipesPage()
+        {
+            WeakReferenceMessenger.Default.Send(new ChangePageMessenger("recipe"));
+        }
+
+        [RelayCommand]
+        public void ShowIngredientsPage()
+        {
+            WeakReferenceMessenger.Default.Send(new ChangePageMessenger("goods"));
         }
 
         partial void OnMonthChanged(string value) => OnPropertyChanged(nameof(Time));

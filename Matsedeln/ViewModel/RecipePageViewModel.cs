@@ -1,14 +1,19 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using Matsedeln.Models;
+using Matsedeln.Messengers;
 using Matsedeln.Usercontrols;
 using Matsedeln.Utils;
+using Matsedeln.Wrappers;
+using MatsedelnShared.Models;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Globalization;
 using System.Text;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
@@ -18,111 +23,121 @@ namespace Matsedeln.ViewModel
     public partial class RecipePageViewModel: ObservableObject
     {
         public AppData Ad { get; } = AppData.Instance;
-        public CollectionViewSource RecipesViewSource { get; set; }
+        [ObservableProperty]
+        private CollectionViewSource recipesViewSource;
+
+        [ObservableProperty]
+        ObservableCollection<RecipeWrapper> recipeList;
 
         private ShoppingListControl shoppinglist;
 
+        [ObservableProperty]
+        private string filterText = string.Empty;
 
         public RecipePageViewModel()
         {
             Ad.ShoppingList.Clear();
+            WeakReferenceMessenger.Default.Register<NameExistsMessenger>(this, async (r, m) => { if (RecipeList != null && RecipeList.Count > 0) m.Reply(RecipeList.Any(x => x.recipe.Name == m.Name)); });
+        }
+
+        [RelayCommand]
+        private async Task LoadRecipe()
+        {
+            var api = new ApiService();
+            var list = await api.GetListAsync<Recipe>("api/recipe");
+            if (list == null) { RecipeList = new ObservableCollection<RecipeWrapper>(); }
+            RecipeList = new ObservableCollection<RecipeWrapper>(list?.Select(x => new RecipeWrapper { recipe = x }) ?? Enumerable.Empty<RecipeWrapper>());
+            SetSource();
+
+        }
+
+        private void SetSource()
+        {
             RecipesViewSource = new CollectionViewSource();
-            RecipesViewSource.Source = Ad.RecipesList;
+            RecipesViewSource.Source = RecipeList;
+            RecipesViewSource.View.Culture = new CultureInfo("sv-SE");
+            RecipesViewSource.SortDescriptions.Add(new SortDescription("recipe.Name", ListSortDirection.Ascending));
             RecipesViewSource.Filter += FilterRecipe;
-            WeakReferenceMessenger.Default.Register<AppData.RefreshCollectionViewMessage>(this, (r, m) => RecipesViewSource.View.Refresh());
-            WeakReferenceMessenger.Default.Register<AppData.AddIngredientShopListMessage>(this, (r, m) => AddIngredientToShoppinglist(m.recipe));
-            WeakReferenceMessenger.Default.Register<AppData.RemoveIngredientShoplistMessage>(this, (r, m) => RemoveIngredientsFromShoppinglist(m.recipe));
-            WeakReferenceMessenger.Default.Register<AppData.GoBackToShoppingListMessage>(this, (r, m) => Ad.CurrentUserControl = shoppinglist);
         }
 
         private void FilterRecipe(object sender, FilterEventArgs e)
         {
-            if (e.Item is Recipe recipe)
+            if (e.Item is RecipeWrapper wrapper)
             {
-                if (!string.IsNullOrEmpty(Ad.FilterText))
-                {
-                    if (recipe.Name.IndexOf(Ad.FilterText, StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        e.Accepted = true;
-                    }
-                    else
-                    {
-                        e.Accepted = false;
-                    }
-                }
-                else
+                if (string.IsNullOrEmpty(FilterText))
                 {
                     e.Accepted = true;
                 }
-            }
-        }
-        public void OnPageLoaded()
-        {
-            RecipesViewSource.View.Refresh();
-        }
-
-        private void AddIngredientToShoppinglist(Recipe recipe)
-        {
-            if (Ad.CurrentUserControl is ShoppingListControl shop && shop.ShowShoppinglist) return;
-
-            var ingredients = recipe.ChildRecipes.SelectMany(x => x.ChildRecipe.Ingredientlist).ToList();
-            if (ingredients == null) ingredients = new List<Ingredient>();
-            foreach (var item in recipe.Ingredientlist)
-            {
-                ingredients.Add(item);
-            }
-            ingredients.ForEach(ingredient =>
-            {
-                if (!Ad.ShoppingList.Any(i => i.Good.Name == ingredient.Good.Name))
-                {
-                    Ad.ShoppingList.Add(new Ingredient(ingredient));
-                }
                 else
                 {
-                    var existingItem = Ad.ShoppingList.First(i => i.Good.Name == ingredient.Good.Name);
-                    existingItem.QuantityInGram += ingredient.QuantityInGram;
-                    existingItem.QuantityInDl += ingredient.QuantityInDl;
-                    existingItem.QuantityInSt += ingredient.QuantityInSt;
-                    existingItem.QuantityInMsk += ingredient.QuantityInMsk;
-                    existingItem.QuantityInTsk += ingredient.QuantityInTsk;
-                    existingItem.Quantity += ingredient.GetQuantity(existingItem);
-                    existingItem.ConvertToOtherUnits();
+                    e.Accepted = wrapper.recipe.Name.IndexOf(FilterText, StringComparison.OrdinalIgnoreCase) >= 0 || wrapper.IsSelected;
                 }
-            });
+            }
         }
+
+
+
 
         [RelayCommand]
         private void EditRecipe(Recipe recipe)
         {
-            shoppinglist = Ad.CurrentUserControl as ShoppingListControl ?? new ShoppingListControl();
-            Ad.CurrentUserControl = new NewRecipeControl(recipe);
+            WeakReferenceMessenger.Default.Send(new SelectedRecipeMessenger(recipe));
         }
 
-
-        private void RemoveIngredientsFromShoppinglist(Recipe recipe)
+        [RelayCommand]
+        private async Task DeleteRecipe()
         {
-            if (Ad.CurrentUserControl is ShoppingListControl shop && shop.ShowShoppinglist) return;
-
-            recipe.Ingredientlist.ToList().ForEach(ingredient =>
+            var sum = RecipeList.Sum(x => x.IsHighlighted ? 1 : 0);
+            if (sum == 0)
             {
-                var itemToRemove = Ad.ShoppingList.FirstOrDefault(i => i.Good.Name == ingredient.Good.Name);
-                if (itemToRemove != null)
+                MessageBox.Show("Du måste välja något innan du kan radera.");
+                return;
+            }
+            else if (sum > 1)
+            {
+                MessageBox.Show("Du får bara välja ett recept innan du kan radera.");
+                return;
+            }
+            var SelectedRecipe = RecipeList.FirstOrDefault(x => x.IsHighlighted);
+            if (SelectedRecipe == null)
+            {
+                MessageBox.Show("Det gick inte att radera. Problem att hitta datacontext");
+                return;
+            }
+            MessageBoxResult result = MessageBox.Show("Vill du verkligen radera detta recept?", "Confirm delettion", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result == MessageBoxResult.Yes)
+            {
+                var api = new ApiService();
+                if (!await api.DeleteAsync($"api/recipe/{SelectedRecipe.recipe.Id}"))
                 {
-                    if (itemToRemove.QuantityInGram == ingredient.QuantityInGram) Ad.ShoppingList.Remove(itemToRemove);
-                    else
-                    {
-                        itemToRemove.QuantityInGram -= ingredient.QuantityInGram;
-                        itemToRemove.QuantityInDl -= ingredient.QuantityInDl;
-                        itemToRemove.QuantityInSt -= ingredient.QuantityInSt;
-                        itemToRemove.QuantityInMsk -= ingredient.QuantityInMsk;
-                        itemToRemove.QuantityInTsk -= ingredient.QuantityInTsk;
-                        itemToRemove.Quantity -= ingredient.GetQuantity(itemToRemove);
-                        itemToRemove.ConvertToOtherUnits();
-                    }
+                    MessageBox.Show("Det gick inte att radera receptet");
+                    return;
                 }
-            });
+                WeakReferenceMessenger.Default.Send(new ToastMessage("Receptet har raderats."));
+                RecipeList.Remove(SelectedRecipe);
+                RecipesViewSource.View.Refresh();
+            }
         }
 
+        [RelayCommand]
+        public void ShowMenuPage()
+        {
+            WeakReferenceMessenger.Default.Send(new ChangePageMessenger("menu"));
+        }
+
+        [RelayCommand]
+        public void ShowIngredientsPage()
+        {
+            WeakReferenceMessenger.Default.Send(new ChangePageMessenger("goods"));
+        }
+
+        [RelayCommand]
+        private void SelectBorder(GoodsWrapper wrapper)
+        {
+            if (wrapper == null) return;
+            wrapper.IsHighlighted = !wrapper.IsHighlighted;
+            WeakReferenceMessenger.Default.Send(new SelectedGoodsMessenger(wrapper));
+        }
 
     }
 }

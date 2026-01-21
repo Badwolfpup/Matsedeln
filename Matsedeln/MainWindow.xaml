@@ -17,43 +17,15 @@
                 <BooleanToVisibilityConverter x:Key="ShowUserControl"/>
         </Window.Resources>
         <Grid Margin="10" >
-            <Grid.RowDefinitions>
-                <RowDefinition Height="50"></RowDefinition>
-                <RowDefinition Height="*"></RowDefinition>
-            </Grid.RowDefinitions>
-
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="2*"></ColumnDefinition>
                 <ColumnDefinition Width="6*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
 
 
-        <StackPanel Margin="10 0 0 0" Background="Cornsilk" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal">
-                <Button Content="Ingrediens" Command="{Binding ShowIngredientsPageCommand}"></Button>
-                <TextBox IsEnabled="{Binding Ad.IsFilterTextboxEnabled}" Margin="15 0 15 0" Text="{Binding Ad.FilterText, UpdateSourceTrigger=PropertyChanged}">
-                    <inter:Interaction.Triggers>
-                        <inter:EventTrigger EventName="TextChanged">
-                            <inter:InvokeCommandAction Command="{Binding FilterGoodsCommand, UpdateSourceTrigger=PropertyChanged}"/>
-                        </inter:EventTrigger>
-                    </inter:Interaction.Triggers>
-                </TextBox>
-                <Button Content="Recept" Command="{Binding ShowRecipesPageCommand}"></Button>
-                <Button Content="Kalender" Command="{Binding ShowMenuPageCommand}" ></Button>
-            </StackPanel>
-            <Button Grid.Column="2" HorizontalAlignment="Right" Width="35" Height="35" Style="{StaticResource BtnNoMax}" 
-                   BorderBrush="Transparent" BorderThickness="1" Background="PaleVioletRed" Command="{Binding DeleteGoodOrRecipeCommand}">
-                <Button.Content>
-                    <TextBlock FontSize="16" FontFamily="Segoe MDL2 Assets" Text="&#xF8AA;"></TextBlock>
-                </Button.Content>
-                <Button.ToolTip>
-                    <ToolTip ToolTipService.InitialShowDelay="200" ToolTipService.ShowDuration="2000">
-                        <TextBlock>Radera</TextBlock>
-                    </ToolTip>
-                </Button.ToolTip>
-            </Button>
-        
-        <ContentControl Content="{Binding Ad.CurrentUserControl}" Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" x:Name="AddContentControl"/>
-        <Frame Margin="10 5 0 0" Content="{Binding Ad.CurrentPage}" Grid.Row="1" Grid.Column="1" x:Name="ContentFrame" NavigationUIVisibility="Hidden" Grid.ColumnSpan="2"></Frame>
+        <ContentControl Content="{Binding CurrentUserControl}" Grid.Column="0" x:Name="AddContentControl"/>
+        <Frame Margin="10 5 0 0" Content="{Binding CurrentPage}" NavigationUIVisibility="Hidden" Grid.Column="1" x:Name="ContentFrame" Grid.ColumnSpan="2"></Frame>
+        <StackPanel Grid.Column="1" Panel.ZIndex="100" IsHitTestVisible="False" x:Name="ToastContainer" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="20"/>
         </Grid>
 
 </Window>

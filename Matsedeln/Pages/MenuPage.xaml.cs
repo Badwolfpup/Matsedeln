@@ -1,5 +1,5 @@
-﻿using Matsedeln.Models;
-using Matsedeln.ViewModel;
+﻿using Matsedeln.ViewModel;
+using MatsedelnShared.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;

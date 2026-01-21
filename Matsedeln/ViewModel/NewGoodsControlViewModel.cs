@@ -1,8 +1,11 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using Matsedeln.Models;
+using Matsedeln.Messengers;
 using Matsedeln.Usercontrols;
+using Matsedeln.Utils;
+using Matsedeln.Wrappers;
+using MatsedelnShared.Models;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -14,6 +17,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
 
 namespace Matsedeln.ViewModel
 {
@@ -21,7 +25,6 @@ namespace Matsedeln.ViewModel
     {
    
 
-        public AppData Ad { get; } = AppData.Instance;
         [ObservableProperty]
         private Goods newGood;
         [ObservableProperty]
@@ -40,64 +43,68 @@ namespace Matsedeln.ViewModel
         private bool isGperDLEnabled = false;
         [ObservableProperty]
         private bool isGperSTEnabled = false;
-        private bool IsNewGood => !Ad.GoodsList.Any(g => g.Id == NewGood.Id);
+        [ObservableProperty]
         private bool _shouldCopyImage;
+        private GoodsWrapper goodsWrapper;
 
         public NewGoodsControlViewModel()
         {
             NewGood = new Goods();
             GoodsImage = new BitmapImage(new Uri(NewGood.ImagePath));
-            WeakReferenceMessenger.Default.Register<AppData.PassGoodsToUCMessage>(this, (r, m) => { NewGood = m.good; UpdateUI(); });
+            WeakReferenceMessenger.Default.Register<SelectedGoodsMessenger>(this, (r, m) => { 
+                NewGood = m.selectedGood.good; 
+                goodsWrapper = m.selectedGood; 
+                ButtonText = "Uppdatera vara"; 
+                SelectedGood(); 
+            });
             WeakReferenceMessenger.Default.Register<AppData.PasteImageMessage>(this, (r, m) => OnPasteExecuted());
         }
 
-        private void UpdateUI()
+        private void SelectedGood()
         {
             IsGperDLEnabled = NewGood.GramsPerDeciliter > 0;
             IsGperSTEnabled = NewGood.GramsPerStick > 0;
             GperDL = NewGood.GramsPerDeciliter > 0 ? NewGood.GramsPerDeciliter.ToString() : string.Empty;
             GperST = NewGood.GramsPerStick > 0 ? NewGood.GramsPerStick.ToString() : string.Empty;
-            ButtonText = IsNewGood ? "Lägg till vara" : "Uppdatera vara";
-            GoodsImage = new BitmapImage(new Uri(NewGood.ImagePath));
+            SetImage(NewGood.ImagePath);
         }
 
-        [RelayCommand]
-        private void ResetGperDL(bool ischecked)
-        {
-           if (!ischecked) GperDL = "0";
-        }
-
-        [RelayCommand]
-        private void ResetGperST(bool ischecked)
-        {
-            if (!ischecked) GperST = "0";
-
-        }
 
         [RelayCommand]
         private void ShowAddRecipeUserControl()
         {
-            Ad.CurrentUserControl = new NewRecipeControl();
-            WeakReferenceMessenger.Default.Send(new AppData.RemoveAllHighlightBorderMessage());
+            WeakReferenceMessenger.Default.Send(new ChangeUsercontrolMessenger("recipe"));
+            if (NewGood != null) WeakReferenceMessenger.Default.Send(new ClearSelectedMessenger(NewGood.Id));
         }
 
         [RelayCommand]
-        private void AbortAddGoods()
+        private void ResetUserControl()
         {
             NewGood = new Goods();
-            UpdateUI();
-            WeakReferenceMessenger.Default.Send(new AppData.ResetBorderMessage());
+            SelectedGood();
+            if (goodsWrapper != null) goodsWrapper.IsHighlighted = false;
+            ButtonText = "Lägg till vara";
         }
 
         partial void OnGperDLChanged(string value)
         {
             NewGood.GramsPerDeciliter = int.TryParse(value, out int result) ? result : 0;
         }
-
         partial void OnGperSTChanged(string value)
         {
             NewGood.GramsPerStick = int.TryParse(value, out int result) ? result : 0;
         }
+
+        partial void OnIsGperDLEnabledChanged(bool value)
+        {
+            if (!value) GperDL = "0";
+        }
+
+        partial void OnIsGperSTEnabledChanged(bool value)
+        {
+            if (!value) GperST = "0";
+        }
+
         [RelayCommand]
         private async Task AddGoodsToDB()
         {
@@ -106,7 +113,9 @@ namespace Matsedeln.ViewModel
                 MessageBox.Show("Var god ange ett namn för varan.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            if (Ad.GoodsList.Any(x => x.Name == NewGood.Name && IsNewGood))
+            var message = new NameExistsMessenger(NewGood.Name);
+            WeakReferenceMessenger.Default.Send(message);
+            if (message.HasReceivedResponse && message.Response == true)
             {
                 MessageBox.Show("Det finns redan en vara med det namnet");
                 return;
@@ -121,30 +130,26 @@ namespace Matsedeln.ViewModel
                 MessageBox.Show("Var god ange gram per styck för varan.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-
-            if (IsNewGood)
+            var api = new ApiService();
+            var serverPath = await api.UploadImageAsync(NewGood.ImagePath);
+            if (string.IsNullOrEmpty(serverPath))
             {
-                var result = await Ad.GoodsService.AddGoods(NewGood, Ad.GoodsList);
-                if (result && _shouldCopyImage)
-                {
-                    KopieraBild();
-                    GoodsImage = new BitmapImage(new Uri(NewGood.ImagePath));
-                }
-                NewGood = new Goods();
-                UpdateUI();
+                MessageBox.Show("Något gick fel vid uppladdningen av bilden.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            NewGood.ImagePath = serverPath;
+            var result = await api.PostAsync<Goods>("api/goods", NewGood);
+            if (result)
+            {
+                WeakReferenceMessenger.Default.Send(new RefreshListMessenger());
+                WeakReferenceMessenger.Default.Send(new ToastMessage("Varan har lagts till/uppdaterats."));
+                ResetUserControl();
             }
             else
             {
-                var result = await Ad.GoodsService.UpdateGoods(NewGood);
-                if (result) MessageBox.Show("Vara uppdaterad!", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-                else
-                {
-                    MessageBox.Show("Något gick fel vid uppdateringen av varan.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
+                MessageBox.Show("Något gick fel vid tillägget/uppdateringen av varan.", "Fel", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
             }
-
         }
 
         #region Handle Images
@@ -155,9 +160,60 @@ namespace Matsedeln.ViewModel
         private BitmapImage tempBild { get; set; } = new BitmapImage();
 
 
+        public void SetImage(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                // Default to dummy if path is null
+                path = "pack://application:,,,/Images/dummybild.png";
+            }
+
+            Uri finalUri;
+
+            // 1. Check if it's already a full Pack URI
+            if (path.StartsWith("pack://"))
+            {
+                finalUri = new Uri(path, UriKind.Absolute);
+            }
+            // 2. Check if it's a relative server path (e.g., /images/...)
+            else if (path.StartsWith("/"))
+            {
+                string baseUrl =
+#if DEBUG
+                    "https://localhost:7039";
+#else
+            "https://your-smarterasp-domain.com"; 
+#endif
+                string fullUrl = $"{baseUrl.TrimEnd('/')}/{path.TrimStart('/')}";
+                finalUri = new Uri(fullUrl, UriKind.Absolute);
+            }
+            // 3. Otherwise, assume it's a direct web link or fallback
+            else
+            {
+                finalUri = new Uri(path, UriKind.RelativeOrAbsolute);
+            }
+
+            try
+            {
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.UriSource = finalUri;
+                // This prevents the UI from locking if you ever replace the image
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.EndInit();
+
+                // Use the [ObservableProperty] generated setter
+                GoodsImage = bitmap;
+            }
+            catch (Exception ex)
+            {
+                // If everything fails, hard-code the fallback
+                GoodsImage = new BitmapImage(new Uri("pack://application:,,,/Images/dummybild.png"));
+            }
+        }
+
         public void OnPasteExecuted()
         {
-            if (!IsNewGood) return;
             if (Clipboard.ContainsImage())
             {
                 BitmapImage bitmapImage = new BitmapImage();
@@ -181,7 +237,7 @@ namespace Matsedeln.ViewModel
                         tempBild = bitmapImage;
                         GoodsImage = bitmapImage;
                         hasAddedImage = true;
-                        _shouldCopyImage = true;
+                        ShouldCopyImage = true;
                         hasExtension = false;
                         AddImagePathToGood();
                     }
@@ -192,10 +248,9 @@ namespace Matsedeln.ViewModel
         [RelayCommand]
         private void ImageMouseDown()
         {
-            if (!IsNewGood) return;
             OpenFileDialog open = new OpenFileDialog()
             {
-                InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Bilder")
+                InitialDirectory = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Bilder")
             };
             open.Multiselect = false;
             if (open.ShowDialog() == true)
@@ -212,11 +267,11 @@ namespace Matsedeln.ViewModel
                     img.EndInit();
                     tempBild = img;
                     GoodsImage = img;
-                    string basePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Bilder");
-                    _shouldCopyImage = open.FileName.StartsWith(basePath) ? false : true;
+                    string basePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Bilder");
+                    ShouldCopyImage = open.FileName.StartsWith(basePath) ? false : true;
                     hasAddedImage = true;
                     hasExtension = true;
-                    if (_shouldCopyImage) AddImagePathToGood();
+                    if (ShouldCopyImage) AddImagePathToGood();
                     else NewGood.ImagePath = filgenväg;
                 }
             }
@@ -225,18 +280,19 @@ namespace Matsedeln.ViewModel
         private void AddImagePathToGood()
         {
             string _folderpath = AppDomain.CurrentDomain.BaseDirectory;
-            string bildfolder = Path.Combine(_folderpath, "Bilder");
+            string bildfolder = System.IO.Path.Combine(_folderpath, "Bilder");
             if (!Directory.Exists(bildfolder)) Directory.CreateDirectory(bildfolder);
 
             string filePath = System.IO.Path.Combine(bildfolder, Guid.NewGuid().ToString() + (hasExtension ? fileextension : ".png"));
 
             NewGood.ImagePath = filePath;
+            KopieraBild();
         }
 
         public void KopieraBild()
         {
 
-
+            if (!hasAddedImage) return;
             if (tempBild != null)
             {
                 // Create a new BitmapEncoder
