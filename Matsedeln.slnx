@@ -1,5 +1,5 @@
 <Solution>
-  <Project Path="../Matserver/Matserver/Matserver.csproj" />
   <Project Path="Matsedeln/Matsedeln.csproj" />
   <Project Path="MatsedelnShared/MatsedelnShared.csproj" Id="1974c177-25b2-48e6-a7c3-957b127518ba" />
+  <Project Path="Matserver/Matserver.csproj" />
 </Solution>
