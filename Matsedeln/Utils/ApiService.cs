@@ -25,7 +25,7 @@ namespace Matsedeln.Utils
             _http.BaseAddress = new Uri("http://localhost:5127/");
             _http.DefaultRequestHeaders.Add("X-Api-Key", ApiKey);
 #else
-                _http.BaseAddress = new Uri("http://your-site.smarterasp.net/");
+                _http.BaseAddress = new Uri("http://badwolfpup-001-site2.mtempurl.com");
                 _http.DefaultRequestHeaders.Add("X-Api-Key", ApiKey);
 #endif
         }
