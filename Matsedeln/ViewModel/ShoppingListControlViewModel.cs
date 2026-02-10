@@ -1,138 +1,179 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using Matsedeln.Usercontrols;
+using Matsedeln.Utils;
+using Matsedeln.Wrappers;
 using MatsedelnShared.Models;
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Text;
+using System.Collections.ObjectModel;
 using System.Windows;
-using System.Windows.Controls;
-using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
 
 namespace Matsedeln.ViewModel
 {
-    public partial class ShoppingListViewModel: ObservableObject
+    public partial class ShoppingListViewModel : ObservableObject, IDisposable
     {
-        public AppData Ad { get; } = AppData.Instance;
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            WeakReferenceMessenger.Default.UnregisterAll(this);
+        }
+
+        [ObservableProperty]
+        private ObservableCollection<Ingredient> shoppingList;
+
+        [ObservableProperty]
+        private bool showShoppingList = true;
 
 
         public ShoppingListViewModel()
         {
-            WeakReferenceMessenger.Default.Register<AppData.ResetShoppinglistUCMessages>(this, (r, m) => AbortIngredientlist());
+            ShoppingList = new ObservableCollection<Ingredient>();
+            WeakReferenceMessenger.Default.Register<Messengers.UpdateShoppingListMessenger>(this, (r, m) =>
+            {
+                if (m.AddorRemove)
+                {
+                    AddIngredientToShoppinglist(m.wrapper);
+                }
+                else
+                {
+                    RemoveIngredientsFromShoppinglist(m.wrapper);
+                }
+            });
         }
 
- 
+
         [RelayCommand]
         private void AbortIngredientlist()
         {
-            Ad.ShoppingList.Clear();
-            //var request = new FindBorderShopListMessage(Ad.RecipePageInstance.RecipeItemsControl);
-            //var response = WeakReferenceMessenger.Default.Send(request);
-            //var allBorders = response.Response;
-            WeakReferenceMessenger.Default.Send(new AppData.RemoveHighlightRecipeMessage());
-            WeakReferenceMessenger.Default.Send(new AppData.ShowShoppingListMessage());
-            //foreach (var item in allBorders)
-            //{
-            //    if (item is Border border)  border.BorderBrush = System.Windows.Media.Brushes.Transparent;
-            //}
+
         }
         [RelayCommand]
         private void CopyShoppinglist()
         {
             string result = "";
 
-            foreach (var item in Ad.ShoppingList)
+            foreach (var item in ShoppingList)
             {
                 result += item.ToString() + "\n";
             }
             //CopyList();
-            Clipboard.SetText(string.Join(Environment.NewLine, Ad.ShoppingList.Select(x => x.ToString())));
+            Clipboard.SetText(string.Join(Environment.NewLine, ShoppingList.Select(x => x.ToString())));
+        }
+
+        [RelayCommand]
+        private void CopyList()
+        {
+            ShowShoppingList = false;
         }
 
         [RelayCommand]
         private void RemoveIngredient(Ingredient ingredient)
         {
-            if (Ad.ShoppingList.Contains(ingredient)) Ad.ShoppingList.Remove(ingredient);
+            if (ShoppingList.Contains(ingredient)) ShoppingList.Remove(ingredient);
         }
 
-        private void AddIngredientToShoppinglist(Recipe recipe)
+        private async void AddIngredientToShoppinglist(RecipeWrapper wrapper)
         {
-            if (Ad.CurrentUserControl is ShoppingListControl shop && shop.ShowShoppinglist) return;
-
-            var ingredients = recipe.ChildRecipes.SelectMany(x => x.ChildRecipe.Ingredientlist).ToList();
-            if (ingredients == null) ingredients = new List<Ingredient>();
-            foreach (var item in recipe.Ingredientlist)
+            try
             {
-                ingredients.Add(item);
-            }
-            ingredients.ForEach(ingredient =>
-            {
-                if (!Ad.ShoppingList.Any(i => i.Good.Name == ingredient.Good.Name))
+                var api = ApiService.Instance;
+                var hierarchty = await api.GetListAsync<RecipeHierarchy>("api/RecipeHierarchy");
+                var quantity = hierarchty?.FirstOrDefault(x => x.ParentRecipeId == wrapper.Recipe.Id)?.Quantity ?? 1;
+                var ingredients = wrapper.Recipe.ChildRecipes.SelectMany(x => x.ChildRecipe.Ingredientlist).ToList() ?? new List<Ingredient>();
+                ingredients = Enumerable.Repeat(ingredients, quantity).SelectMany(x => x).ToList();
+                foreach (var item in wrapper.Recipe.Ingredientlist)
                 {
-                    Ad.ShoppingList.Add(new Ingredient(ingredient));
+                    ingredients.Add(item);
                 }
-                else
+                ingredients.ForEach(ingredient =>
                 {
-                    var existingItem = Ad.ShoppingList.First(i => i.Good.Name == ingredient.Good.Name);
-                    existingItem.QuantityInGram += ingredient.QuantityInGram;
-                    existingItem.QuantityInDl += ingredient.QuantityInDl;
-                    existingItem.QuantityInSt += ingredient.QuantityInSt;
-                    existingItem.QuantityInMsk += ingredient.QuantityInMsk;
-                    existingItem.QuantityInTsk += ingredient.QuantityInTsk;
-                    existingItem.Quantity += ingredient.GetQuantity(existingItem);
-                    existingItem.ConvertToOtherUnits();
-                }
-            });
-        }
-
-        private void RemoveIngredientsFromShoppinglist(Recipe recipe)
-        {
-            if (Ad.CurrentUserControl is ShoppingListControl shop && shop.ShowShoppinglist) return;
-
-            recipe.Ingredientlist.ToList().ForEach(ingredient =>
-            {
-                var itemToRemove = Ad.ShoppingList.FirstOrDefault(i => i.Good.Name == ingredient.Good.Name);
-                if (itemToRemove != null)
-                {
-                    if (itemToRemove.QuantityInGram == ingredient.QuantityInGram) Ad.ShoppingList.Remove(itemToRemove);
+                    if (!ShoppingList.Any(i => i.Good.Name == ingredient.Good.Name))
+                    {
+                        ShoppingList.Add(new Ingredient(ingredient));
+                    }
                     else
                     {
-                        itemToRemove.QuantityInGram -= ingredient.QuantityInGram;
-                        itemToRemove.QuantityInDl -= ingredient.QuantityInDl;
-                        itemToRemove.QuantityInSt -= ingredient.QuantityInSt;
-                        itemToRemove.QuantityInMsk -= ingredient.QuantityInMsk;
-                        itemToRemove.QuantityInTsk -= ingredient.QuantityInTsk;
-                        itemToRemove.Quantity -= ingredient.GetQuantity(itemToRemove);
-                        itemToRemove.ConvertToOtherUnits();
+                        var existingItem = ShoppingList.First(i => i.Good.Name == ingredient.Good.Name);
+                        existingItem.QuantityInGram += ingredient.QuantityInGram;
+                        existingItem.QuantityInDl += ingredient.QuantityInDl;
+                        existingItem.QuantityInSt += ingredient.QuantityInSt;
+                        existingItem.QuantityInMsk += ingredient.QuantityInMsk;
+                        existingItem.QuantityInTsk += ingredient.QuantityInTsk;
+                        existingItem.Quantity += ingredient.GetQuantity(existingItem);
+                        existingItem.ConvertToOtherUnits();
                     }
-                }
-            });
-        }
-
-
-        private void CopyList()
-        {
-            int qmax = Ad.ShoppingList.Max(x => x.Quantity).ToString().Length;
-            int umax = Ad.ShoppingList.Max(y => y.Unit.Length);
-            if (qmax == 0 || umax == 0) return;
-            Clipboard.SetText(string.Join(Environment.NewLine, Ad.ShoppingList.Select(x =>
+                });
+            }
+            catch (Exception ex)
             {
-                int qlength = x.Quantity.ToString().Length;
-                int ulength = x.Unit.Length;
-                string quantity = $"{(qlength < qmax ? string.Concat(Enumerable.Repeat(" ", qmax - qlength)) : "")}{x.Quantity}";
-                string unit = $"{x.Unit}{(ulength < umax ? string.Concat(Enumerable.Repeat(" ", umax - ulength)) : "")}";
-                return $"{quantity} {unit} {x.Good.Name}";
-            })));
-
+                WeakReferenceMessenger.Default.Send(new Messengers.ToastMessage("Kunde inte hämta ingredienser: " + ex.Message));
+            }
         }
+
+        private async void RemoveIngredientsFromShoppinglist(RecipeWrapper wrapper)
+        {
+            try
+            {
+                var api = ApiService.Instance;
+                var hierarchty = await api.GetListAsync<RecipeHierarchy>("api/RecipeHierarchy");
+                var quantity = hierarchty?.FirstOrDefault(x => x.ParentRecipeId == wrapper.Recipe.Id)?.Quantity ?? 1;
+                var ingredients = wrapper.Recipe.ChildRecipes.SelectMany(x => x.ChildRecipe.Ingredientlist).ToList() ?? new List<Ingredient>();
+                ingredients = Enumerable.Repeat(ingredients, quantity).SelectMany(x => x).ToList();
+                foreach (var item in wrapper.Recipe.Ingredientlist)
+                {
+                    ingredients.Add(item);
+                }
+                ingredients.ForEach(ingredient =>
+                {
+                    if (!ShoppingList.Any(i => i.Good.Name == ingredient.Good.Name))
+                    {
+                        ShoppingList.Remove(ingredient);
+                    }
+                    else
+                    {
+                        var existingItem = ShoppingList.First(i => i.Good.Name == ingredient.Good.Name);
+                        existingItem.QuantityInGram -= ingredient.QuantityInGram;
+                        existingItem.QuantityInDl -= ingredient.QuantityInDl;
+                        existingItem.QuantityInSt -= ingredient.QuantityInSt;
+                        existingItem.QuantityInMsk -= ingredient.QuantityInMsk;
+                        existingItem.QuantityInTsk -= ingredient.QuantityInTsk;
+                        existingItem.Quantity -= ingredient.GetQuantity(existingItem);
+                        existingItem.ConvertToOtherUnits();
+                        if (existingItem.Quantity <= 0) ShoppingList.Remove(existingItem);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                WeakReferenceMessenger.Default.Send(new Messengers.ToastMessage("Kunde inte ta bort ingredienser: " + ex.Message));
+            }
+        }
+
+
+        //private void CopyList()
+        //{
+        //    int qmax = ShoppingList.Max(x => x.Quantity).ToString().Length;
+        //    int umax = ShoppingList.Max(y => y.Unit.Length);
+        //    if (qmax == 0 || umax == 0) return;
+        //    Clipboard.SetText(string.Join(Environment.NewLine, ShoppingList.Select(x =>
+        //    {
+        //        int qlength = x.Quantity.ToString().Length;
+        //        int ulength = x.Unit.Length;
+        //        string quantity = $"{(qlength < qmax ? string.Concat(Enumerable.Repeat(" ", qmax - qlength)) : "")}{x.Quantity}";
+        //        string unit = $"{x.Unit}{(ulength < umax ? string.Concat(Enumerable.Repeat(" ", umax - ulength)) : "")}";
+        //        return $"{quantity} {unit} {x.Good.Name}";
+        //    })));
+
+        //}
+
         [RelayCommand]
         private void UnitComboBox(Ingredient ingredient)
         {
             if (ingredient == null) return;
 
-            if (ingredient.Unit == "g") {  ingredient.Quantity = ingredient.QuantityInGram; }
+            if (ingredient.Unit == "g") { ingredient.Quantity = ingredient.QuantityInGram; }
             else if (ingredient.Unit == "dl") { ingredient.Quantity = ingredient.QuantityInDl; }
             else if (ingredient.Unit == "msk") { ingredient.Quantity = ingredient.QuantityInMsk; }
             else if (ingredient.Unit == "tsk") { ingredient.Quantity = ingredient.QuantityInTsk; }

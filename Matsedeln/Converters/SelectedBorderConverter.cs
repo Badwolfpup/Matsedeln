@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
 
@@ -13,7 +8,7 @@ namespace Matsedeln.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if  (value is not bool selected) return Brushes.Transparent;
+            if (value is not bool selected) return Brushes.Transparent;
             return selected ? Brushes.Red : Brushes.Transparent;
         }
 

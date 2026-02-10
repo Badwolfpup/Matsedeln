@@ -1,37 +1,40 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using Matsedeln.Pages;
-using Matsedeln.Usercontrols;
+using Matsedeln.Messengers;
 using Matsedeln.Utils;
+using Matsedeln.Wrappers;
 using MatsedelnShared.Models;
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
-using System.Text;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Media.Media3D;
 
 namespace Matsedeln.ViewModel
 {
-    public partial class WeeklyMenuControlViewModel: ObservableObject
+    public partial class WeeklyMenuControlViewModel : ObservableObject, IDisposable
     {
-        public AppData Ad { get; } = AppData.Instance;
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            WeakReferenceMessenger.Default.UnregisterAll(this);
+        }
 
         private int weeknumber;
         [ObservableProperty]
         private string weekAndDate = "";
-
-        private bool lunchordinner;
-        private MenuEntry currentEntry;
+        private bool _lunchOrDinner;
+        private MenuWrapper currentEntry;
         [ObservableProperty]
-        public ObservableCollection<Recipe> localList;
-        public CollectionViewSource MenuListSource { get; set; }
+        private ObservableCollection<MenuWrapper> menuList;
+        [ObservableProperty]
+        private CollectionViewSource menuEntrySource;
+        [ObservableProperty]
+        private Visibility isLoading = Visibility.Collapsed;
         private CultureInfo culture = new CultureInfo("sv-SE");
         private System.Globalization.Calendar calendar;
         private DateTime WeekToDisplay = DateTime.Today;
@@ -40,55 +43,96 @@ namespace Matsedeln.ViewModel
         {
             calendar = culture.Calendar;
             DisplayWeek();
-            MenuListSource = new CollectionViewSource();
-            MenuListSource.Source = Ad.MenuList;
-            MenuListSource.Filter += FilterMenuEntry;
-            MenuListSource.View.SortDescriptions.Add(new SortDescription("Date", ListSortDirection.Ascending));
+            WeakReferenceMessenger.Default.Register<AddUpdateMenu>(this, (r, m) => UpdateMenu(m.wrapper));
 
-            WeakReferenceMessenger.Default.Register<AppData.AddRecipeToMenuMessage>(this, (r, m) => UpdateMenu(m.recipe));
-            WeakReferenceMessenger.Default.Register<AppData.RefreshMenuEntrySourceMessage>(this, (r, m) => MenuListSource.View.Refresh());
         }
+
+        [RelayCommand]
+        private async Task LoadWeeklyMenu()
+        {
+            IsLoading = Visibility.Visible;
+
+            try
+            {
+                var api = ApiService.Instance;
+                var list = await api.GetListAsync<MenuEntry>($"api/menuentry/{WeekToDisplay}");
+
+                MenuList = new ObservableCollection<MenuWrapper>(
+                    list?.Select(x => new MenuWrapper(x)) ?? Enumerable.Empty<MenuWrapper>()
+                );
+
+                if (MenuEntrySource != null)
+                {
+                    MenuEntrySource.Filter -= FilterMenuEntry;
+                }
+
+                MenuEntrySource = new CollectionViewSource { Source = MenuList };
+                MenuEntrySource.SortDescriptions.Add(new SortDescription("Date", ListSortDirection.Ascending));
+                MenuEntrySource.Filter += FilterMenuEntry;
+                MenuEntrySource.View.Culture = new CultureInfo("sv-SE");
+            }
+            catch (Exception ex)
+            {
+                MenuList = new ObservableCollection<MenuWrapper>();
+            }
+            finally
+            {
+                IsLoading = Visibility.Collapsed;
+            }
+
+        }
+
 
         private void FilterMenuEntry(object sender, FilterEventArgs e)
         {
-            if (e.Item is MenuEntry menuEntry)
+            if (e.Item is MenuWrapper wrapper)
             {
-                e.Accepted = menuEntry.Date >= WeekToDisplay && menuEntry.Date < WeekToDisplay.AddDays(7);
+                e.Accepted = wrapper.Date >= WeekToDisplay && wrapper.Date < WeekToDisplay.AddDays(7);
             }
         }
 
-        private async void UpdateMenu(Recipe recipe)
+        private async void UpdateMenu(RecipeWrapper wrapper)
         {
-            //if (Ad.CurrentUserControl is not WeeklyMenuControl) return;
-            //if (lunchordinner)
-            //{
-            //    currentEntry.LunchRecipe = recipe;
-            //    if (!await Ad.MenuService.UpdateLunchEntry(currentEntry)) MessageBox.Show("Kunde inte uppdatera maträtt för lunch.");
-            //    Ad.CurrentPage = Ad.MenuPageInstance;
-            //}
-            //else
-            //{
-            //    currentEntry.DinnerRecipe = recipe;
-            //    if (!await Ad.MenuService.UpdateDinnerEntry(currentEntry)) MessageBox.Show("Kunde inte uppdatera maträtt för middag.");
-            //    Ad.CurrentPage = Ad.MenuPageInstance;
-            //}
-            WeakReferenceMessenger.Default.Send(new AppData.RefreshMenuEntrySourceMessage());
+            if (_lunchOrDinner) currentEntry.LunchRecipe = wrapper.Recipe;
+            else currentEntry.DinnerRecipe = wrapper.Recipe;
+            var api = ApiService.Instance;
+            await api.PostAsync("api/menuentry", currentEntry.Menu);
+            wrapper.IsHighlighted = false;
+            MenuEntrySource.View.Refresh();
+            WeakReferenceMessenger.Default.Send(new ChangePageMessenger(PageType.Menu));
         }
 
         [RelayCommand]
-        public async Task RemoveLunch(MenuEntry menuEntry)
+        public async Task RemoveLunch(MenuWrapper wrapper)
         {
-            if (menuEntry == null) return;
-            menuEntry.LunchRecipe = null;
-            //if (!await Ad.MenuService.UpdateLunchEntry(menuEntry)) MessageBox.Show("Kunde inte radera maträtt för lunch.");
+            if (wrapper == null) return;
+            wrapper.LunchRecipe = null;
+            wrapper.LunchRecipeId = null;
+            var api = ApiService.Instance;
+            var result = await api.PostAsync($"api/menuentry", wrapper.Menu);
+            if (!result)
+            {
+                WeakReferenceMessenger.Default.Send(new ToastMessage("Kunde inte ta bort maträtt från matsedel.", isError: true));
+                return;
+            }
+            wrapper.LunchRecipe = null;
+            WeakReferenceMessenger.Default.Send(new RemoveRecipeMenuMessenger(wrapper, true));
         }
         [RelayCommand]
-        public async Task RemoveDinner(MenuEntry menuEntry)
+        public async Task RemoveDinner(MenuWrapper wrapper)
         {
-            if (menuEntry == null) return;
-            menuEntry.DinnerRecipe = null;
-            //if (!await Ad.MenuService.UpdateDinnerEntry(menuEntry)) MessageBox.Show("Kunde inte radera maträtt för dinner.");
-
+            if (wrapper == null) return;
+            wrapper.DinnerRecipe = null;
+            wrapper.DinnerRecipeId = null;
+            var api = ApiService.Instance;
+            var result = await api.PostAsync($"api/menuentry", wrapper.Menu);
+            if (!result)
+            {
+                WeakReferenceMessenger.Default.Send(new ToastMessage("Kunde inte ta bort maträtt från matsedel.", isError: true));
+                return;
+            }
+            wrapper.DinnerRecipe = null;
+            WeakReferenceMessenger.Default.Send(new RemoveRecipeMenuMessenger(wrapper, false));
         }
 
         private async void DisplayWeek()
@@ -104,7 +148,7 @@ namespace Matsedeln.ViewModel
         {
             WeekToDisplay = WeekToDisplay.AddDays(-7);
             DisplayWeek();
-            MenuListSource.View.Refresh();  
+            MenuEntrySource.View.Refresh();
 
         }
         [RelayCommand]
@@ -112,21 +156,21 @@ namespace Matsedeln.ViewModel
         {
             WeekToDisplay = WeekToDisplay.AddDays(7);
             DisplayWeek();
-            MenuListSource.View.Refresh();
+            MenuEntrySource.View.Refresh();
         }
         [RelayCommand]
-        private void LunchChanged(MenuEntry menuEntry)
+        private void LunchChanged(MenuWrapper wrapper)
         {
-            currentEntry = menuEntry;
-            lunchordinner = true;
-            Ad.CurrentPage = new RecipePage();
+            currentEntry = wrapper;
+            _lunchOrDinner = true;
+            WeakReferenceMessenger.Default.Send(new ChangePageMessenger(PageType.Dishes));
         }
         [RelayCommand]
-        private void DinnerChanged(MenuEntry menuEntry)
+        private void DinnerChanged(MenuWrapper wrapper)
         {
-            currentEntry = menuEntry;
-            lunchordinner = false;
-            Ad.CurrentPage = new RecipePage();
+            currentEntry = wrapper;
+            _lunchOrDinner = false;
+            WeakReferenceMessenger.Default.Send(new ChangePageMessenger(PageType.Dishes));
         }
 
 

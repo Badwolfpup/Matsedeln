@@ -6,6 +6,7 @@
              xmlns:inter="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:local="clr-namespace:Matsedeln.Usercontrols"
              xmlns:converter="clr-namespace:Matsedeln.Converters"
+             xmlns:usercontrols="clr-namespace:Matsedeln.Usercontrols"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="650">
     <UserControl.Resources>
@@ -13,6 +14,11 @@
         <local:FindSelectedRecipeConverter x:Key="FindSelectedRecipeConverter"></local:FindSelectedRecipeConverter>
         <converter:ImageUrlConverter x:Key="ImageUrlConverter"></converter:ImageUrlConverter>
     </UserControl.Resources>
+    <inter:Interaction.Triggers>
+        <inter:EventTrigger EventName="Loaded">
+            <inter:InvokeCommandAction Command="{Binding LoadWeeklyMenuCommand}"/>
+        </inter:EventTrigger>
+    </inter:Interaction.Triggers>
     <Grid Background="#FFFDFDFD">
         
         <StackPanel>
@@ -27,7 +33,17 @@
 
                 <Button Grid.Column="2" Content="&gt;" Style="{StaticResource BtnNoMax}" Width="30" Command="{Binding NextWeekCommand}"></Button>
             </Grid>
-            <ItemsControl Margin="0 20 0 0" ItemsSource="{Binding MenuListSource.View}">
+            <Grid x:Name="LoadingOverlay" Grid.Row="2" Visibility="{Binding IsLoading}" Background="#80000000">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <usercontrols:LoadingSpinner Width="80" Height="80" SpinnerColor="White"/>
+                    <TextBlock Text="Loading data..." 
+                      Foreground="White" 
+                      FontSize="16" 
+                      Margin="0,20,0,0"
+                      HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+            <ItemsControl Margin="0 20 0 0" ItemsSource="{Binding MenuEntrySource.View}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <StackPanel>
@@ -44,7 +60,7 @@
                                         <ColumnDefinition Width="*"></ColumnDefinition>
                                     </Grid.ColumnDefinitions>
                                     <Grid.ToolTip>
-                                        <local:ImageTooltip ImageSource="{Binding LunchRecipe.ImagePath}"/>
+                                        <local:ImageTooltip ImageSource="{Binding LunchRecipe.ImagePath, Converter={StaticResource ImageUrlConverter}}"/>
                                     </Grid.ToolTip>
                                     <TextBlock Text="Lunch" HorizontalAlignment="Right" Grid.Column="0"/>
                                     <Button Grid.Column="1" Background="PapayaWhip" Foreground="Black" Command="{Binding DataContext.LunchChangedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">

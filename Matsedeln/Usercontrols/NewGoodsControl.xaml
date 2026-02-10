@@ -17,31 +17,21 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-            
-        
-        <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center">
 
-            <Button Grid.Column="0" Command="{Binding ShowAddRecipeUserControlCommand}">
-                <Button.Content>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="16" Text="&#xF8AA;"/>
-                        <TextBlock Text=" recept" FontWeight="Bold" />
-                    </StackPanel>
-                </Button.Content>
-            </Button>
-        </StackPanel>
+        <TextBlock Grid.Row="0" Text="{Binding Title}" HorizontalAlignment="Center" FontSize="24" FontWeight="Bold"></TextBlock>
         <StackPanel Grid.Row="1" Margin="5 10 0 0">
             <Image 
                 x:Name="BoundImage"
-                Source="{Binding GoodsImage}"
+                Source="{Binding ImageHandler.Image}"
                 Grid.Row="0" 
                 Stretch="Uniform"
                 HorizontalAlignment="Center"
                 Width="250" Height="250" 
-                MinHeight="40" MinWidth="40">
+                MinHeight="40" MinWidth="40"
+                RenderOptions.BitmapScalingMode="HighQuality">
                 <inter:Interaction.Triggers>
                     <inter:EventTrigger EventName="MouseLeftButtonDown">
-                        <inter:InvokeCommandAction Command="{Binding ImageMouseDownCommand}"/>
+                        <inter:InvokeCommandAction Command="{Binding ImageHandler.ImageMouseDownCommand}"/>
                     </inter:EventTrigger>
                 </inter:Interaction.Triggers>
             </Image>

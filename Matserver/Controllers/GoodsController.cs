@@ -1,9 +1,7 @@
-﻿using MatsedelnShared; 
+﻿using MatsedelnShared;
 using MatsedelnShared.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.ObjectModel;
 
 namespace Matserver.Controllers;
 
@@ -29,7 +27,7 @@ public class GoodsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return Problem("Error retrieving data from database. " +  ex.Message);
+            return Problem("Error retrieving data from database. " + ex.Message);
         }
     }
 
@@ -45,7 +43,7 @@ public class GoodsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return Problem("Error adding good to the database. " + ex.Message); 
+            return Problem("Error adding good to the database. " + ex.Message);
         }
 
         return Ok(good);

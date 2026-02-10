@@ -1,43 +1,31 @@
-﻿
-Kalendersida
-		Mouseover
-			Efter 3 sek, visa storpopup med inforuta
-			
-		Visa senaste 4 veckornas
-			Matcha mouseover  för alla förekomster
+﻿**TODO**
+Fixa inköpslista
+	popup window om man klickar på en ingrediens med info och möjlighet att välja mängd och lägga till i inköpslista
+	fixa att man inte kan byta usercontrol om man påbörjat en inköpslista
+	hur ska inköpslistan se ut? 
+	möjlighet att ändra mått och uppdatera mängden
+Be claude gå igenom projektet och föreslå 
 
-		Statistik
-			Välja intervall
-				Senaste månaden
-				Senaste tre månaderna
-				Iår
-				Senaste året
-				Valrfritt
+Börja med MAUI - hämta claude extension för UI?
 
-			Vanligaste rätterna
-				Top 5
+Statistik
+	Välja intervall
+		Senaste månaden
+		Senaste tre månaderna
+		Iår
+		Senaste året
+		Valrfritt
 
-			Vanligaste lunchen
-				I veckan (mån - tor)
-				På helgen
+	Vanligaste rätterna
+		Top 5
 
-			Vanligaste middagen
-				I veckan (mån - tor)
-				På helgen
+	Vanligaste lunchen
+		I veckan (mån - tor)
+		På helgen
 
-			Antal unika luncher/middagar (exklusive äta ute)
-			Antal äta ute
+	Vanligaste middagen
+		I veckan (mån - tor)
+		På helgen
 
-**TODO**
-Kan inte testa NewRecipeUserControl innan RecipePage är klar
-Lägger inte till ingrediesner poå receipcontrol
-
-Putsa på UI
-Lägga till att datum utökas även när man växlar månader, inte vara i veckomenyn
-Fixa antal om man börjar med g så kan det bli noll i shoppinglista
-
-Fixa alla api calls
-Ersätt AppData
-	Gör messengers till egna klasser? Eller en static för getter
-	Varje page/UC laddar relevant från DB, ingen central lista
-	Använd root för att accessa code-in-behind
+	Antal unika luncher/middagar (exklusive äta ute)
+	Antal äta ute

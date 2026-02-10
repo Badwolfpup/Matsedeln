@@ -1,43 +1,66 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Net.Http.Json;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Matsedeln.Utils
 {
     public class ApiService
     {
-        private readonly HttpClient _http;
+        private static readonly HttpClient _http;
+        private static readonly JsonSerializerOptions _jsonOptions;
         private const string ApiKey = "94kngslij458nlbdnlk589ddgmdrdmnb4589ujdgf";
 
-        public ApiService()
+        public static ApiService Instance { get; } = new ApiService();
+
+        static ApiService()
         {
             _http = new HttpClient();
-            // Check if we are debugging locally
-            #if DEBUG
-                _http.BaseAddress = new Uri("http://localhost:5127/"); // Your local dev URL
-                _http.DefaultRequestHeaders.Add("X-Api-Key", ApiKey);
-            #else
+            _jsonOptions = new JsonSerializerOptions
+            {
+                ReferenceHandler = ReferenceHandler.IgnoreCycles,
+                PropertyNameCaseInsensitive = true
+            };
+#if DEBUG
+            _http.BaseAddress = new Uri("http://localhost:5127/");
+            _http.DefaultRequestHeaders.Add("X-Api-Key", ApiKey);
+#else
                 _http.BaseAddress = new Uri("http://your-site.smarterasp.net/");
                 _http.DefaultRequestHeaders.Add("X-Api-Key", ApiKey);
-            #endif
-            
+#endif
         }
+
+        private ApiService() { }
 
         // Generic GET: Works for any model in your Shared Library
         public async Task<List<T>?> GetListAsync<T>(string endpoint)
         {
-            return await _http.GetFromJsonAsync<List<T>>(endpoint);
+            return await _http.GetFromJsonAsync<List<T>>(endpoint, _jsonOptions);
         }
 
         // Generic POST: Perfect for adding new data
         public async Task<bool> PostAsync<T>(string endpoint, T data)
         {
-            var response = await _http.PostAsJsonAsync(endpoint, data);
-            return response.IsSuccessStatusCode;
+            try
+            {
+                var response = await _http.PostAsJsonAsync(endpoint, data, _jsonOptions);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"===== POST {endpoint} failed: {response.StatusCode} =====");
+                    System.Diagnostics.Debug.WriteLine(errorContent);
+                    System.Diagnostics.Debug.WriteLine("===== END ERROR =====");
+#if DEBUG
+                    System.Windows.MessageBox.Show(errorContent, $"POST Failed: {response.StatusCode}");
+#endif
+                }
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"POST {endpoint} exception: {ex.Message}");
+                throw;
+            }
         }
 
         // Generic DELETE: Works for any model in your Shared Library
@@ -50,7 +73,7 @@ namespace Matsedeln.Utils
         // Generic PUT: Perfect for patching data
         public async Task<bool> PutAsync<T>(string endpoint, T data)
         {
-            var response = await _http.PutAsJsonAsync(endpoint, data);
+            var response = await _http.PutAsJsonAsync(endpoint, data, _jsonOptions);
             return response.IsSuccessStatusCode;
         }
 
@@ -71,7 +94,7 @@ namespace Matsedeln.Utils
 
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadFromJsonAsync<ImageUploadResult>();
+                var result = await response.Content.ReadFromJsonAsync<ImageUploadResult>(_jsonOptions);
                 // The server returns the RELATIVE path (e.g., /images/guid.png)
                 return result?.path;
             }

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
-using System.Windows.Controls;
+﻿using System.Globalization;
 using System.Windows.Data;
 
 namespace Matsedeln.Pages
@@ -11,9 +7,14 @@ namespace Matsedeln.Pages
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
+            bool hasvalue = false;
+            if (parameter != null)
+            {
+                hasvalue = true;
+            }
             if (value is DateTime date)
             {
-                var weekday = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(date.ToString("ddd").ToLower());
+                var weekday = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(hasvalue ? date.ToString("dddd").ToLower() : date.ToString("ddd").ToLower());
                 var datum = date.ToString("d/M", CultureInfo.InvariantCulture);
                 return $"{weekday} {datum}";
             }

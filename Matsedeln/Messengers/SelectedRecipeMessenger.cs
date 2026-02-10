@@ -1,19 +1,14 @@
-﻿using MatsedelnShared.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Matsedeln.Wrappers;
 
 namespace Matsedeln.Messengers
 {
     public class SelectedRecipeMessenger
     {
-        public Recipe recipe { get; set; }
+        public RecipeWrapper wrapper { get; set; }
 
-        public SelectedRecipeMessenger(Recipe recipe)
+        public SelectedRecipeMessenger(RecipeWrapper wrapper)
         {
-            this.recipe = recipe;
+            this.wrapper = wrapper;
         }
     }
 }

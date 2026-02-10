@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
 
 namespace MatsedelnShared.Models
 {
@@ -12,26 +9,28 @@ namespace MatsedelnShared.Models
         {
         }
 
-        public RecipeHierarchy(Recipe parent, Recipe child)
+        public RecipeHierarchy(Recipe parent, Recipe child, int quantity = 1)
         {
             ParentRecipe = parent;
             ChildRecipe = child;
             ParentRecipeId = parent.Id;
             ChildRecipeId = child.Id;
+            Quantity = quantity;
         }
 
         [Key]
-        public int Id { get; set; }  = 0;
+        public int Id { get; set; } = 0;
 
         [ForeignKey("ParentRecipe")]
         public int ParentRecipeId { get; set; }
-        public virtual Recipe ParentRecipe { get; set; }
+        public virtual Recipe? ParentRecipe { get; set; }
 
         [ForeignKey("ChildRecipe")]
         public int ChildRecipeId { get; set; }
-        public virtual Recipe ChildRecipe { get; set; }
+        public virtual Recipe? ChildRecipe { get; set; }
 
-        
+        public int Quantity { get; set; } = 1;
+
     }
 }
 

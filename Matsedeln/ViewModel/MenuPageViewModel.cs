@@ -5,28 +5,36 @@ using Matsedeln.Messengers;
 using Matsedeln.Utils;
 using Matsedeln.Wrappers;
 using MatsedelnShared.Models;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
-using System.Text;
+using System.Windows;
 using System.Windows.Data;
 
 namespace Matsedeln.ViewModel
 {
-    partial class MenuPageViewModel: ObservableObject
+    partial class MenuPageViewModel : ObservableObject, IDisposable
     {
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            WeakReferenceMessenger.Default.UnregisterAll(this);
+        }
 
         [ObservableProperty]
         private CollectionViewSource menuEntrySource;
 
         [ObservableProperty]
-        private ObservableCollection<MenuEntry> menuList;
+        private ObservableCollection<MenuWrapper> menuList;
 
         [ObservableProperty]
         private string month = DateTime.Now.ToString("MMMM");
-
+        [ObservableProperty]
+        private Visibility isLoading = Visibility.Collapsed;
         [ObservableProperty]
         private string year = DateTime.Now.ToString("yyyy");
         public string Time => $"{CultureInfo.CurrentCulture.TextInfo.ToTitleCase(Month.ToLower())} {Year}";
@@ -37,35 +45,78 @@ namespace Matsedeln.ViewModel
         public MenuPageViewModel()
         {
             UpdateRange();
-            GetMenuFromDb();
-            WeakReferenceMessenger.Default.Register<AppData.RefreshMenuEntrySourceMessage>(this, (r, m) => MenuEntrySource.View.Refresh());
-
+            WeakReferenceMessenger.Default.Register<RemoveRecipeMenuMessenger>(this, async (r, m) =>
+            {
+                var recipe = MenuList.FirstOrDefault(x => x.Date == m.menu.Date);
+                if (recipe != null)
+                {
+                    if (m.IsLunch)
+                    {
+                        recipe.LunchRecipe = null;
+                    }
+                    else
+                    {
+                        recipe.DinnerRecipe = null;
+                    }
+                    MenuEntrySource.View.Refresh();
+                }
+            });
         }
 
-
-        private async void GetMenuFromDb()
+        [RelayCommand]
+        private async Task LoadMenu()
         {
-            var api = new ApiService();
-            var list = await api.GetListAsync<MenuEntry>($"api/menuentry/{currentdate}");
-            if (list == null) { MenuList = new ObservableCollection<MenuEntry>(); }
-            else MenuList = new ObservableCollection<MenuEntry>(list);
-            SetSource();
+            IsLoading = Visibility.Visible;
+
+            try
+            {
+                var api = ApiService.Instance;
+                var list = await api.GetListAsync<MenuEntry>($"api/menuentry/{currentdate}");
+
+                MenuList = new ObservableCollection<MenuWrapper>(
+                    list?.Select(x => new MenuWrapper(x)) ?? Enumerable.Empty<MenuWrapper>()
+                );
+
+                if (MenuEntrySource != null)
+                {
+                    MenuEntrySource.Filter -= FilterMenuEntry;
+                }
+
+                MenuEntrySource = new CollectionViewSource { Source = MenuList };
+                MenuEntrySource.SortDescriptions.Add(new SortDescription("Date", ListSortDirection.Ascending));
+                MenuEntrySource.Filter += FilterMenuEntry;
+                MenuEntrySource.View.Culture = new CultureInfo("sv-SE");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                MenuList = new ObservableCollection<MenuWrapper>();
+            }
+            finally
+            {
+                IsLoading = Visibility.Collapsed;
+            }
+            //var api = ApiService.Instance;
+            //var list = await api.GetListAsync<MenuEntry>($"api/menuentry/{currentdate}");
+            //if (list == null) { MenuList = new ObservableCollection<MenuWrapper>(); }
+            //MenuList = new ObservableCollection<MenuWrapper>(list?.Select(x => new MenuWrapper(x)) ?? Enumerable.Empty<MenuWrapper>());
+            //SetSource();
         }
 
         private void SetSource()
         {
             MenuEntrySource = new CollectionViewSource();
             MenuEntrySource.Source = MenuList;
+            MenuEntrySource.View.Culture = new CultureInfo("sv-SE");
             MenuEntrySource.Filter += FilterMenuEntry;
             MenuEntrySource.View.SortDescriptions.Add(new SortDescription("Date", ListSortDirection.Ascending));
-            MenuEntrySource.View.Refresh();
         }
 
         private void FilterMenuEntry(object sender, FilterEventArgs e)
         {
-            if (e.Item is MenuEntry menuEntry)
+            if (e.Item is MenuWrapper wrapper)
             {
-                e.Accepted = menuEntry.Date >= start && menuEntry.Date <= end;
+                e.Accepted = wrapper.Date >= start && wrapper.Date <= end;
             }
         }
 
@@ -74,25 +125,57 @@ namespace Matsedeln.ViewModel
         {
             currentdate = currentdate.AddMonths((change == "true" ? 1 : -1));
             UpdateRange();
-            var api = new ApiService();
-            var list = await api.GetListAsync<MenuEntry>($"api/menu/{currentdate}");
-            if (list == null) { MenuList = new ObservableCollection<MenuEntry>(); }
-            else MenuList = new ObservableCollection<MenuEntry>(list);
+            if (start < MenuList.First().Date || end > MenuList.Last().Date)
+            {
+                var api = ApiService.Instance;
+                var list = await api.GetListAsync<MenuEntry>($"api/menuentry/{currentdate}");
+                if (list == null) { MenuList = new ObservableCollection<MenuWrapper>(); }
+                MenuList = new ObservableCollection<MenuWrapper>(list?.Select(x => new MenuWrapper(x)) ?? Enumerable.Empty<MenuWrapper>());
+            }
             GetTime();
             MenuEntrySource.View.Refresh();
         }
-        //[RelayCommand]
-        //public async Task NextMonth()
-        //{
-        //    currentdate = currentdate.AddMonths(1);
-        //    UpdateRange();
-        //    var api = new ApiService();
-        //    var list = await api.GetListAsync<MenuEntry>($"api/menu/{currentdate}");
-        //    if (list == null) { MenuList = new ObservableCollection<MenuEntry>(); }
-        //    else MenuList = new ObservableCollection<MenuEntry>(list);
-        //    GetTime();
-        //    MenuEntrySource.View.Refresh();
-        //}
+
+        [RelayCommand]
+        public void MouseEnterLunch(int id)
+        {
+            var recipes = MenuList.Where(x => x.LunchRecipeId == id);
+            foreach (var item in recipes)
+            {
+                item.IsLunchHighlighted = true;
+            }
+        }
+
+        [RelayCommand]
+        public void MouseLeaveLunch(int id)
+        {
+            var recipes = MenuList.Where(x => x.LunchRecipeId == id);
+            foreach (var item in recipes)
+            {
+                item.IsLunchHighlighted = false;
+            }
+        }
+
+        [RelayCommand]
+        public void MouseEnterDinner(int id)
+        {
+            var recipes = MenuList.Where(x => x.DinnerRecipeId == id);
+            foreach (var item in recipes)
+            {
+                item.IsDinnerHighlighted = true;
+            }
+        }
+
+        [RelayCommand]
+        public void MouseLeaveDinner(int id)
+        {
+            var recipes = MenuList.Where(x => x.DinnerRecipeId == id);
+            foreach (var item in recipes)
+            {
+                item.IsDinnerHighlighted = false;
+            }
+        }
+
 
         private void UpdateRange()
         {
@@ -114,13 +197,25 @@ namespace Matsedeln.ViewModel
         [RelayCommand]
         public void ShowRecipesPage()
         {
-            WeakReferenceMessenger.Default.Send(new ChangePageMessenger("recipe"));
+            WeakReferenceMessenger.Default.Send(new ChangePageMessenger(PageType.Recipe));
+            WeakReferenceMessenger.Default.Send(new ChangeUsercontrolMessenger(UserControlType.Recipe));
+
         }
 
         [RelayCommand]
         public void ShowIngredientsPage()
         {
-            WeakReferenceMessenger.Default.Send(new ChangePageMessenger("goods"));
+            WeakReferenceMessenger.Default.Send(new ChangePageMessenger(PageType.Goods));
+            WeakReferenceMessenger.Default.Send(new ChangeUsercontrolMessenger(UserControlType.Goods));
+        }
+
+
+        [RelayCommand]
+        public void ShowDishesPage()
+        {
+            WeakReferenceMessenger.Default.Send(new ChangePageMessenger(PageType.Dishes));
+            WeakReferenceMessenger.Default.Send(new ChangeUsercontrolMessenger(UserControlType.Shopping));
+
         }
 
         partial void OnMonthChanged(string value) => OnPropertyChanged(nameof(Time));

@@ -7,41 +7,41 @@ namespace Matserver.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class IngredientsController : ControllerBase
+public class RecipeHierarchyController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
 
     // The Server injects the DbContext here automatically
-    public IngredientsController(ApplicationDbContext db)
+    public RecipeHierarchyController(ApplicationDbContext db)
     {
         _db = db;
     }
 
     // GET: api/ingredients
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Ingredient>>> GetIngredients()
+    public async Task<ActionResult<IEnumerable<RecipeHierarchy>>> GetRecipeHierarchy()
     {
-        return await _db.Ingredients.ToListAsync();
+        return await _db.RecipeHierarchies.ToListAsync();
     }
 
     // POST: api/ingredients
     [HttpPost]
-    public async Task<ActionResult<Ingredient>> CreateIngredient(Ingredient ingredient)
+    public async Task<ActionResult<RecipeHierarchy>> CreateRecipeHierarchy(RecipeHierarchy hierarchy)
     {
-        _db.Ingredients.Add(ingredient);
+        _db.RecipeHierarchies.Add(hierarchy);
         await _db.SaveChangesAsync();
 
         // Returns a 201 Created status
-        return CreatedAtAction(nameof(GetIngredients), new { id = ingredient.Id }, ingredient);
+        return CreatedAtAction(nameof(GetRecipeHierarchy), new { id = hierarchy.Id }, hierarchy);
     }
 
     // PUT: api/ingredients/5
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateIngredient(int id, Ingredient ingredient)
+    public async Task<IActionResult> UpdateRecipeHierarchy(int id, RecipeHierarchy hierarchy)
     {
-        if (id != ingredient.Id) return BadRequest();
+        if (id != hierarchy.Id) return BadRequest();
 
-        _db.Entry(ingredient).State = EntityState.Modified;
+        _db.Entry(hierarchy).State = EntityState.Modified;
 
         try
         {
@@ -49,7 +49,7 @@ public class IngredientsController : ControllerBase
         }
         catch (DbUpdateConcurrencyException)
         {
-            if (!_db.Ingredients.Any(e => e.Id == id)) return NotFound();
+            if (!_db.RecipeHierarchies.Any(e => e.Id == id)) return NotFound();
             throw;
         }
 
@@ -58,12 +58,12 @@ public class IngredientsController : ControllerBase
 
     // DELETE: api/ingredients/5
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteIngredient(int id)
+    public async Task<IActionResult> DeleteRecipeHierarchy(int id)
     {
-        var ingredient = await _db.Ingredients.FindAsync(id);
-        if (ingredient == null) return NotFound();
+        var hierarchy = await _db.RecipeHierarchies.FindAsync(id);
+        if (hierarchy == null) return NotFound();
 
-        _db.Ingredients.Remove(ingredient);
+        _db.RecipeHierarchies.Remove(hierarchy);
         await _db.SaveChangesAsync();
 
         return NoContent();

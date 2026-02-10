@@ -1,15 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace Matsedeln.Usercontrols
 {
@@ -18,7 +8,7 @@ namespace Matsedeln.Usercontrols
     /// </summary>
     public partial class ImageTooltip : UserControl
     {
-        public static readonly DependencyProperty ImageSourceProperty = 
+        public static readonly DependencyProperty ImageSourceProperty =
             DependencyProperty.Register("ImageSource", typeof(string), typeof(ImageTooltip), new PropertyMetadata(null));
 
         public static readonly DependencyProperty RecipeNameProperty =
@@ -26,7 +16,7 @@ namespace Matsedeln.Usercontrols
 
         public string ImageSource
         {
-            get {  return (string)GetValue(ImageSourceProperty);}
+            get { return (string)GetValue(ImageSourceProperty); }
             set { SetValue(ImageSourceProperty, value); }
         }
 

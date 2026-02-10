@@ -1,0 +1,130 @@
+﻿<Page x:Class="Matsedeln.Pages.DishesPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:Matsedeln.Pages"
+      xmlns:inter="http://schemas.microsoft.com/xaml/behaviors"
+      xmlns:converter="clr-namespace:Matsedeln.Converters"
+      xmlns:usercontrols="clr-namespace:Matsedeln.Usercontrols"
+      xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"      
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="800"
+      Title="RecipePage">
+    <Page.Resources>
+        <local:RecipeNameConverter x:Key="RecipeNameConverter"></local:RecipeNameConverter>
+        <converter:ImageUrlConverter x:Key="ImageUrlConverter"></converter:ImageUrlConverter>
+        <converter:SelectedBorderConverter x:Key="SelectedBorderConverter"></converter:SelectedBorderConverter>
+    </Page.Resources>
+    <inter:Interaction.Triggers>
+        <inter:EventTrigger EventName="Loaded">
+            <inter:InvokeCommandAction Command="{Binding LoadRecipeCommand}"/>
+        </inter:EventTrigger>
+    </inter:Interaction.Triggers>
+    <Grid Background="Cornsilk">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Margin="10 0 0 0" Background="Cornsilk" Orientation="Horizontal">
+            <Button Content="Ingrediens" Command="{Binding ShowIngredientsPageCommand}"></Button>
+            <Button Content="Recept" Command="{Binding ShowRecipesPageCommand}"></Button>
+            <Button Content="Kalender" Command="{Binding ShowMenuPageCommand}" ></Button>
+            <TextBox Margin="15 0 15 0" Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"/>
+
+        </StackPanel>
+        <Button HorizontalAlignment="Right" Width="35" Height="35" Style="{StaticResource BtnNoMax}" 
+                BorderBrush="Transparent" BorderThickness="1" Background="PaleVioletRed" Command="{Binding DeleteRecipeCommand}">
+            <Button.Content>
+                <TextBlock FontSize="16" FontFamily="Segoe MDL2 Assets" Text="&#xF8AA;"></TextBlock>
+            </Button.Content>
+            <Button.ToolTip>
+                <ToolTip ToolTipService.InitialShowDelay="200" ToolTipService.ShowDuration="2000">
+                    <TextBlock>Radera</TextBlock>
+                </ToolTip>
+            </Button.ToolTip>
+        </Button>
+        <Grid x:Name="LoadingOverlay" Grid.Row="1" Visibility="{Binding IsLoading}" Background="#80000000">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <usercontrols:LoadingSpinner Width="80" Height="80" SpinnerColor="White"/>
+                <TextBlock Text="Loading data..." 
+                      Foreground="White" 
+                      FontSize="16" 
+                      Margin="0,20,0,0"
+                      HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
+        <ListBox Grid.Row="1" 
+         x:Name="RecipeListBox" 
+         ItemsSource="{Binding RecipesViewSource.View}"
+         VirtualizingPanel.IsVirtualizing="True"
+         VirtualizingPanel.VirtualizationMode="Recycling"
+         VirtualizingPanel.CacheLengthUnit="Item"
+         VirtualizingPanel.CacheLength="10,10"
+         VirtualizingPanel.ScrollUnit="Pixel"
+         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+         ScrollViewer.VerticalScrollBarVisibility="Auto"
+         Background="Transparent"
+         BorderThickness="0">
+
+            <!-- Remove default ListBox selection styling -->
+            <ListBox.Resources>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Margin" Value="0"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <ContentPresenter/>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListBox.Resources>
+
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <vwp:VirtualizingWrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Border BorderThickness="3" 
+                    Width="200" 
+                    Margin="5" 
+                    Padding="5" 
+                    CornerRadius="10" 
+                    BorderBrush="{Binding IsHighlighted, Converter={StaticResource SelectedBorderConverter}}">
+                        <inter:Interaction.Triggers>
+                            <inter:EventTrigger EventName="MouseRightButtonDown">
+                                <inter:InvokeCommandAction 
+                            Command="{Binding DataContext.EditRecipeCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" 
+                            CommandParameter="{Binding}"/>
+                            </inter:EventTrigger>
+                            <inter:EventTrigger EventName="MouseLeftButtonDown">
+                                <inter:InvokeCommandAction 
+                            Command="{Binding DataContext.SelectBorderCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" 
+                            CommandParameter="{Binding}"/>
+                            </inter:EventTrigger>
+                        </inter:Interaction.Triggers>
+
+                        <StackPanel ToolTipService.InitialShowDelay="1000">
+                            <StackPanel.ToolTip>
+                                <TextBlock Text="{Binding Name}"/>
+                            </StackPanel.ToolTip>
+                            <Image Width="100"
+                           Height="100"
+                           Source="{Binding ImagePath, Converter={StaticResource ImageUrlConverter}}"/>
+                            <TextBlock Text="{Binding Name, Converter={StaticResource RecipeNameConverter}}"
+                               HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+    </Grid>
+</Page>

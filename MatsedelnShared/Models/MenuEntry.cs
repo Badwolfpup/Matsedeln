@@ -1,23 +1,36 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Globalization;
-using System.Text;
 
 namespace MatsedelnShared.Models
 {
-    public partial class MenuEntry: ObservableObject
+    // Plain POCO - UI change notification is handled by MenuWrapper in the WPF client.
+    // This keeps the shared library free of UI framework dependencies.
+    public class MenuEntry
     {
+        private Recipe? _lunchRecipe;
+        private Recipe? _dinnerRecipe;
 
-        [ObservableProperty]
-        private Recipe? lunchRecipe;
+        // Setters sync the FK ids to keep model consistent without requiring ObservableObject.
+        public Recipe? LunchRecipe
+        {
+            get => _lunchRecipe;
+            set
+            {
+                _lunchRecipe = value;
+                LunchRecipeId = value?.Id;
+            }
+        }
 
-        [ObservableProperty]
-        private Recipe? dinnerRecipe;
+        public Recipe? DinnerRecipe
+        {
+            get => _dinnerRecipe;
+            set
+            {
+                _dinnerRecipe = value;
+                DinnerRecipeId = value?.Id;
+            }
+        }
 
-       
         public int? LunchRecipeId { get; set; }  // FK to Recipe
         public int? DinnerRecipeId { get; set; }  // FK to Recipe
 
@@ -25,9 +38,7 @@ namespace MatsedelnShared.Models
         public int Id { get; set; } = 0;
 
         [Required]
-        public  DateTime Date { get; set; }
-
-
+        public DateTime Date { get; set; }
 
         public MenuEntry(Recipe lunchrecipe, Recipe dinnerrecipe, DateTime date)
         {
@@ -49,9 +60,6 @@ namespace MatsedelnShared.Models
             Id = menu.Id;
             Date = menu.Date;
         }
-
-        partial void OnLunchRecipeChanged(Recipe? value) => LunchRecipeId = value?.Id;
-
 
         public override string ToString()
         {

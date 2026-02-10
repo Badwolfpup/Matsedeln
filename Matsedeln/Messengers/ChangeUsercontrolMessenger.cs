@@ -1,17 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Matsedeln.Messengers
+﻿namespace Matsedeln.Messengers
 {
+    public enum UserControlType { Goods, Recipe, Shopping, Menu }
+
     public class ChangeUsercontrolMessenger
     {
-        public string TypeOfControl { get; set; }
-        public ChangeUsercontrolMessenger(string typeOfControl)
+        public UserControlType Control { get; set; }
+        public ChangeUsercontrolMessenger(UserControlType control)
         {
-            TypeOfControl = typeOfControl;
+            Control = control;
         }
     }
 }

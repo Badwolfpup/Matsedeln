@@ -1,10 +1,7 @@
 ﻿using MatsedelnShared;
 using MatsedelnShared.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.ObjectModel;
 
 namespace Matserver.Controllers
 {
@@ -62,30 +59,65 @@ namespace Matserver.Controllers
         [HttpPost]
         public async Task<ActionResult<Recipe>> PostRecipe(Recipe recipe)
         {
-            // 1. Ingredients: Existing Goods stay Unchanged
-            foreach (var ing in recipe.Ingredientlist.Where(i => i.Good != null && i.Good.Id > 0))
+            // 1. Ingredients: Mark existing Goods as Unchanged, clear Recipe back-reference
+            foreach (var ing in recipe.Ingredientlist)
             {
-                _db.Entry(ing.Good!).State = EntityState.Unchanged;
+                ing.Recipe = null;
+                if (ing.Good != null && ing.Good.Id > 0)
+                {
+                    _db.Entry(ing.Good).State = EntityState.Unchanged;
+                }
             }
 
-            // 2. Child Recipes: The LINK is new, but the ACTUAL RECIPE is existing
-            foreach (var h in recipe.ChildRecipes.Where(c => c.ChildRecipe != null && c.ChildRecipe.Id > 0))
+            // 2. Child Recipes: Clear navigation properties, rely only on FKs
+            foreach (var h in recipe.ChildRecipes)
             {
-                // Tell EF: "I'm linking to this recipe, don't try to insert a new one"
-                _db.Entry(h.ChildRecipe!).State = EntityState.Unchanged;
+                h.ParentRecipe = null;
+                h.ChildRecipe = null;
             }
 
-            // 3. Parent Recipes (Same logic if you allow editing from this side)
-            foreach (var h in recipe.ParentRecipes.Where(p => p.ParentRecipe != null && p.ParentRecipe.Id > 0))
+            // 3. Parent Recipes: Clear navigation properties
+            foreach (var h in recipe.ParentRecipes)
             {
-                _db.Entry(h.ParentRecipe!).State = EntityState.Unchanged;
+                h.ParentRecipe = null;
+                h.ChildRecipe = null;
             }
 
-            // 4. Finally, Add or Update the main Recipe
             if (recipe.Id == 0)
+            {
                 _db.Recipes.Add(recipe);
+            }
             else
+            {
+                // Find IDs of ingredients and child recipes that were removed on the client.
+                // Use raw ID queries to avoid loading full entities (which would cause
+                // tracking conflicts when Update attaches the incoming graph).
+                var incomingIngredientIds = recipe.Ingredientlist
+                    .Where(i => i.Id > 0).Select(i => i.Id).ToHashSet();
+                var removedIngredientIds = await _db.Ingredients
+                    .Where(i => i.RecipeId == recipe.Id && !incomingIngredientIds.Contains(i.Id))
+                    .Select(i => i.Id)
+                    .ToListAsync();
+                if (removedIngredientIds.Count > 0)
+                {
+                    _db.Ingredients.RemoveRange(
+                        removedIngredientIds.Select(id => new Ingredient { Id = id }));
+                }
+
+                var incomingChildIds = recipe.ChildRecipes
+                    .Where(h => h.Id > 0).Select(h => h.Id).ToHashSet();
+                var removedChildIds = await _db.RecipeHierarchies
+                    .Where(h => h.ParentRecipeId == recipe.Id && !incomingChildIds.Contains(h.Id))
+                    .Select(h => h.Id)
+                    .ToListAsync();
+                if (removedChildIds.Count > 0)
+                {
+                    _db.RecipeHierarchies.RemoveRange(
+                        removedChildIds.Select(id => new RecipeHierarchy { Id = id }));
+                }
+
                 _db.Recipes.Update(recipe);
+            }
 
             await _db.SaveChangesAsync();
             return Ok(recipe);

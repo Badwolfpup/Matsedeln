@@ -6,6 +6,7 @@
       xmlns:local="clr-namespace:Matsedeln.Pages"
       xmlns:inter="http://schemas.microsoft.com/xaml/behaviors"
       xmlns:user="clr-namespace:Matsedeln.Usercontrols"
+      xmlns:usercontrols="clr-namespace:Matsedeln.Usercontrols"
       xmlns:converter="clr-namespace:Matsedeln.Converters"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
@@ -13,7 +14,13 @@
     <Page.Resources>
         <local:DateConverter x:Key="DateConverter"></local:DateConverter>
         <converter:ImageUrlConverter x:Key="ImageUrlConverter"></converter:ImageUrlConverter>
+        <converter:SelectedBorderConverter x:Key="SelectedBorderConverter"></converter:SelectedBorderConverter>
     </Page.Resources>
+    <inter:Interaction.Triggers>
+        <inter:EventTrigger EventName="Loaded">
+            <inter:InvokeCommandAction Command="{Binding LoadMenuCommand}"/>
+        </inter:EventTrigger>
+    </inter:Interaction.Triggers>
     <Grid Background="#FFFDFDFD">
 
         <Grid.RowDefinitions>
@@ -24,6 +31,7 @@
         <StackPanel Margin="0 0 0 10" Background="Cornsilk" Orientation="Horizontal">
             <Button Margin="0 0 20 0" Content="Ingrediens" Command="{Binding ShowIngredientsPageCommand}"></Button>
             <Button Content="Recept" Command="{Binding ShowRecipesPageCommand}"></Button>
+            <Button Content="Maträtter" Command="{Binding ShowDishesPageCommand}"></Button>
         </StackPanel>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
@@ -31,7 +39,16 @@
             <TextBlock Margin="20 0 20 0" HorizontalAlignment="Center" Grid.Column="1" FontSize="20" Text="{Binding Time}"/>
             <Button Grid.Column="2" Content="&gt;" Style="{StaticResource BtnNoMax}" Width="30" Command="{Binding ChangeMonthCommand}" CommandParameter="true"></Button>
         </StackPanel>
-
+        <Grid x:Name="LoadingOverlay" Grid.Row="2" Visibility="{Binding IsLoading}" Background="#80000000">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <usercontrols:LoadingSpinner Width="80" Height="80" SpinnerColor="White"/>
+                <TextBlock Text="Loading data..." 
+                      Foreground="White" 
+                      FontSize="16" 
+                      Margin="0,20,0,0"
+                      HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
         <ItemsControl ItemsSource="{Binding MenuEntrySource.View}" Grid.Row="2">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -43,21 +60,37 @@
                     <Border BorderBrush="LightBlue" BorderThickness="3" CornerRadius="20" >
                         <StackPanel>
                             <TextBlock HorizontalAlignment="Center" Text="{Binding Date, Converter={StaticResource DateConverter}}"></TextBlock>
-                            <Border Tag="lunch" BorderBrush="Transparent" BorderThickness="3" CornerRadius="10" MouseEnter="Lunch_MouseEnter" MouseLeave="Lunch_MouseLeave">
+                            <Border Tag="lunch" BorderBrush="{Binding IsLunchHighlighted, Converter={StaticResource SelectedBorderConverter}}" BorderThickness="3" CornerRadius="10">
+                                <inter:Interaction.Triggers>
+                                    <inter:EventTrigger EventName="MouseEnter">
+                                        <inter:InvokeCommandAction Command="{Binding DataContext.MouseEnterLunchCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding LunchRecipeId}"/>
+                                    </inter:EventTrigger>
+                                    <inter:EventTrigger EventName="MouseLeave">
+                                        <inter:InvokeCommandAction Command="{Binding DataContext.MouseLeaveLunchCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding LunchRecipeId}"/>
+                                    </inter:EventTrigger>
+                                </inter:Interaction.Triggers>
                                 <StackPanel  Margin="5" Background="Cornsilk" Orientation="Horizontal" ToolTipService.InitialShowDelay="2000" ToolTipService.ShowDuration="3000">
                                     <StackPanel.ToolTip>
-                                        <user:ImageTooltip RecipeName="{Binding LunchRecipe.Name}" ImageSource="{Binding LunchRecipe.ImagePath}"/>
+                                        <user:ImageTooltip RecipeName="{Binding LunchRecipe.Name}" ImageSource="{Binding LunchImagePath, Converter={StaticResource ImageUrlConverter}}"/>
                                     </StackPanel.ToolTip>
-                                    <Image Margin="5" Width="40" Height="40" Stretch="Fill" Source="{Binding LunchRecipe.ImagePath, Converter={StaticResource ImageUrlConverter}}"></Image>
+                                    <Image Margin="5" Width="40" Height="40" Stretch="Fill" Source="{Binding LunchImagePath, Converter={StaticResource ImageUrlConverter}}"></Image>
                                     <TextBlock Text="{Binding LunchRecipe.Name}"/>
                                 </StackPanel>
                             </Border>
-                            <Border Tag="dinner" BorderBrush="Transparent" BorderThickness="3" CornerRadius="10" MouseEnter="Dinner_MouseEnter" MouseLeave="Dinner_MouseLeave">
+                            <Border Tag="dinner" BorderBrush="{Binding IsDinnerHighlighted, Converter={StaticResource SelectedBorderConverter}}" BorderThickness="3" CornerRadius="10">
+                                <inter:Interaction.Triggers>
+                                    <inter:EventTrigger EventName="MouseEnter">
+                                        <inter:InvokeCommandAction Command="{Binding DataContext.MouseEnterDinnerCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding DinnerRecipeId}"/>
+                                    </inter:EventTrigger>
+                                    <inter:EventTrigger EventName="MouseLeave">
+                                        <inter:InvokeCommandAction Command="{Binding DataContext.MouseLeaveDinnerCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding DinnerRecipeId}"/>
+                                    </inter:EventTrigger>
+                                </inter:Interaction.Triggers>
                                 <StackPanel Margin="5 0 5 0" Background="CornflowerBlue" Orientation="Horizontal" ToolTipService.InitialShowDelay="2000" ToolTipService.ShowDuration="3000">
                                     <StackPanel.ToolTip>
-                                        <user:ImageTooltip RecipeName="{Binding DinnerRecipe.Name}" ImageSource="{Binding DinnerRecipe.ImagePath}"/>
+                                        <user:ImageTooltip RecipeName="{Binding DinnerRecipe.Name}" ImageSource="{Binding DinnerImagePath, Converter={StaticResource ImageUrlConverter}}"/>
                                     </StackPanel.ToolTip>
-                                    <Image Margin="5" Width="40" Height="40" Stretch="Fill" Source="{Binding DinnerRecipe.ImagePath}"></Image>
+                                    <Image Margin="5" Width="40" Height="40" Stretch="Fill" Source="{Binding DinnerImagePath, Converter={StaticResource ImageUrlConverter}}"></Image>
                                     <TextBlock Text="{Binding DinnerRecipe.Name}"/>
                                 </StackPanel>
                             </Border>

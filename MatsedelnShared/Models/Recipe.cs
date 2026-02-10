@@ -1,21 +1,14 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using MatsedelnShared.Models;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace MatsedelnShared.Models
 {
-    public partial class Recipe : ObservableObject
+    // Plain POCO - UI change notification is handled by RecipeWrapper in the WPF client.
+    // This keeps the shared library free of UI framework dependencies.
+    public class Recipe
     {
         public Recipe(string name)
         {
-            this.name = name;
-            Ingredientlist = new ObservableCollection<Ingredient>(Ingredientlist);
+            Name = name;
         }
 
         public Recipe()
@@ -24,27 +17,26 @@ namespace MatsedelnShared.Models
 
         public Recipe(Recipe recipe)
         {
-            this.name = recipe.Name;
-            this.Id = recipe.Id;
-            this.imagePath = recipe.ImagePath;
-            this.Ingredientlist = new ObservableCollection<Ingredient>(recipe.Ingredientlist);
-            this.ParentRecipes = recipe.ParentRecipes;
-            this.ChildRecipes = recipe.ChildRecipes;
+            Name = recipe.Name;
+            Id = recipe.Id;
+            ImagePath = recipe.ImagePath;
+            IsDish = recipe.IsDish;
+            Ingredientlist = new List<Ingredient>(recipe.Ingredientlist);
+            ChildRecipes = new List<RecipeHierarchy>(recipe.ChildRecipes);
         }
+
         [Key]
         public int Id { get; set; } = 0;
 
-        [ObservableProperty]
-        private string name = string.Empty;
+        public string Name { get; set; } = string.Empty;
 
-        [ObservableProperty]
-        private string? imagePath = "pack://application:,,,/Images/dummybild.png";
+        public string? ImagePath { get; set; } = "pack://application:,,,/Images/dummybild.png";
+
+        public bool IsDish { get; set; } = false;
 
         // EF Core and JSON prefer ICollection or List for the database layer
         public virtual ICollection<Ingredient> Ingredientlist { get; set; } = new List<Ingredient>();
         public virtual ICollection<RecipeHierarchy> ChildRecipes { get; set; } = new List<RecipeHierarchy>();
         public virtual ICollection<RecipeHierarchy> ParentRecipes { get; set; } = new List<RecipeHierarchy>();
-
-
     }
 }

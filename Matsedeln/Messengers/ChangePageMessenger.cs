@@ -1,18 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Matsedeln.Messengers
+﻿namespace Matsedeln.Messengers
 {
+    public enum PageType { Goods, Recipe, Menu, Dishes }
+
     public class ChangePageMessenger
     {
-        public string TypeOfPage { get; set; }
+        public PageType Page { get; set; }
 
-        public ChangePageMessenger(string typeOfPage)
+        public ChangePageMessenger(PageType page)
         {
-            TypeOfPage = typeOfPage;
+            Page = page;
         }
     }
 }

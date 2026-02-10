@@ -1,14 +1,10 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace MatsedelnShared.Models
 {
-    public partial class Goods : ObservableValidator
+    // Plain POCO - UI change notification is handled by GoodsWrapper in the WPF client.
+    // This keeps the shared library free of UI framework dependencies.
+    public class Goods
     {
         public Goods(string name, string imagepath)
         {
@@ -22,14 +18,14 @@ namespace MatsedelnShared.Models
 
         [Key]
         public int Id { get; set; } = 0;
+
         [Required]
-        [ObservableProperty]
-        private string name = string.Empty;
-        [ObservableProperty]
-        private string? imagePath = "pack://application:,,,/Images/dummybild.png";
-        [ObservableProperty]
-        private int gramsPerDeciliter = 0;
-        [ObservableProperty]
-        private int gramsPerStick = 0;
+        public string Name { get; set; } = string.Empty;
+
+        public string? ImagePath { get; set; } = "pack://application:,,,/Images/dummybild.png";
+
+        public int GramsPerDeciliter { get; set; } = 0;
+
+        public int GramsPerStick { get; set; } = 0;
     }
 }

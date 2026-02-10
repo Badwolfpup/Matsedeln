@@ -2,44 +2,46 @@
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Matsedeln.Messengers;
-using Matsedeln.Usercontrols;
 using Matsedeln.Utils;
 using Matsedeln.Wrappers;
 using MatsedelnShared.Models;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
-using System.Text;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Media;
-using static Matsedeln.ViewModel.IngredientPageViewModel;
 
 namespace Matsedeln.ViewModel
 {
-    public partial class IngredientPageViewModel: ObservableObject
+    public partial class IngredientPageViewModel : ObservableObject, IDisposable
     {
-        public AppData Ad { get; } = AppData.Instance;
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            WeakReferenceMessenger.Default.UnregisterAll(this);
+        }
         [ObservableProperty]
         private GoodsWrapper selectedGood;
         [ObservableProperty]
         private string filterText = string.Empty;
         [ObservableProperty]
         private ObservableCollection<GoodsWrapper> goodsList;
-
+        [ObservableProperty]
+        private Visibility isLoading = Visibility.Collapsed;
         [ObservableProperty]
         private CollectionViewSource goodsViewSource;
+
         public IngredientPageViewModel()
         {
-            WeakReferenceMessenger.Default.Register<NameExistsMessenger>(this, async (r, m) => { if (GoodsList != null && GoodsList.Count > 0) m.Reply(GoodsList.Any(x => x.good.Name == m.Name)); });
+            WeakReferenceMessenger.Default.Register<NameExistsMessenger>(this, async (r, m) => { if (GoodsList != null && GoodsList.Count > 0) m.Reply(GoodsList.Any(x => x.Name == m.Name)); });
             WeakReferenceMessenger.Default.Register<RefreshListMessenger>(this, async (r, m) => await LoadGoods());
             WeakReferenceMessenger.Default.Register<SetSelectedMessenger>(this, (r, m) =>
             {
-                var goodWrapper = GoodsList.FirstOrDefault(x => x.good.Id == m.Id);
+                var goodWrapper = GoodsList?.FirstOrDefault(x => x.Id == m.Id);
                 if (goodWrapper != null)
                 {
                     goodWrapper.IsSelected = true;
@@ -57,7 +59,7 @@ namespace Matsedeln.ViewModel
                 }
                 else
                 {
-                    var goodWrapper = GoodsList.FirstOrDefault(x => x.good.Id == m.Id);
+                    var goodWrapper = GoodsList.FirstOrDefault(x => x.Id == m.Id);
                     if (goodWrapper != null)
                     {
                         goodWrapper.IsSelected = false;
@@ -68,43 +70,58 @@ namespace Matsedeln.ViewModel
             });
         }
 
- 
+
         [RelayCommand]
         private async Task LoadGoods()
         {
-            var api = new ApiService();
-            var list = await api.GetListAsync<Goods>("api/goods");
-            if (list == null) { GoodsList = new ObservableCollection<GoodsWrapper>(); }
-            GoodsList = new ObservableCollection<GoodsWrapper>(list?.Select(x => new GoodsWrapper { good = x }) ?? Enumerable.Empty<GoodsWrapper>());
-            SetSource();
+            IsLoading = Visibility.Visible;
 
+            try
+            {
+                var api = ApiService.Instance;
+                var list = await api.GetListAsync<Goods>("api/goods");
+
+                GoodsList = new ObservableCollection<GoodsWrapper>(
+                    list?.Select(x => new GoodsWrapper(x)) ?? Enumerable.Empty<GoodsWrapper>()
+                );
+
+                if (GoodsViewSource != null)
+                {
+                    GoodsViewSource.Filter -= FilterGoods;
+                }
+
+                GoodsViewSource = new CollectionViewSource { Source = GoodsList };
+                GoodsViewSource.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
+                GoodsViewSource.Filter += FilterGoods;
+                GoodsViewSource.View.Culture = new CultureInfo("sv-SE");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                GoodsList = new ObservableCollection<GoodsWrapper>();
+            }
+            finally
+            {
+                IsLoading = Visibility.Collapsed;
+            }
         }
 
-
-        private void SetSource()
-        {
-            GoodsViewSource = new CollectionViewSource();
-            GoodsViewSource.Source = GoodsList;
-            GoodsViewSource.View.Culture = new CultureInfo("sv-SE");
-            GoodsViewSource.SortDescriptions.Add(new SortDescription("good.Name", ListSortDirection.Ascending));
-            GoodsViewSource.Filter += FilterGoods;
-        }
 
         [RelayCommand]
         public async Task DeleteGood()
         {
             if (SelectedGood == null)
             {
-                MessageBox.Show("Du måste välja något innan du kan radera.");
+                WeakReferenceMessenger.Default.Send(new ToastMessage("Du måste välja något innan du kan radera.", isError: true));
                 return;
             }
             MessageBoxResult result = MessageBox.Show("Vill du verkligen radera denna vara?", "Confirm delettion", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result == MessageBoxResult.Yes)
             {
-                var api = new ApiService();
-                if (!await api.DeleteAsync($"api/goods/{SelectedGood.good.Id}"))
+                var api = ApiService.Instance;
+                if (!await api.DeleteAsync($"api/goods/{SelectedGood.Good.Id}"))
                 {
-                    MessageBox.Show("Det gick inte att radera varan");
+                    WeakReferenceMessenger.Default.Send(new ToastMessage("Det gick inte att radera varan", isError: true));
                     return;
                 }
                 GoodsList.Remove(SelectedGood);
@@ -122,7 +139,7 @@ namespace Matsedeln.ViewModel
                 }
                 else
                 {
-                    e.Accepted = wrapper.good.Name.IndexOf(FilterText, StringComparison.OrdinalIgnoreCase) >= 0 || wrapper.IsSelected;
+                    e.Accepted = wrapper.Name.IndexOf(FilterText, StringComparison.OrdinalIgnoreCase) >= 0 || wrapper.IsSelected;
                 }
             }
 
@@ -131,11 +148,11 @@ namespace Matsedeln.ViewModel
         [RelayCommand]
         private void SelectBorder(GoodsWrapper wrapper)
         {
-            if (wrapper == null) return; 
-            GoodsList.ToList().ForEach(x => x.IsHighlighted = false);
+            if (wrapper == null) return;
+            //GoodsList.ToList().ForEach(x => x.IsHighlighted = false);
             wrapper.IsHighlighted = !wrapper.IsHighlighted;
-            SelectedGood = wrapper;
-            WeakReferenceMessenger.Default.Send(new SelectedGoodsMessenger(wrapper));
+            SelectedGood = wrapper.IsHighlighted ? wrapper : null;
+            WeakReferenceMessenger.Default.Send(new SelectedGoodsMessenger(SelectedGood));
         }
 
         partial void OnFilterTextChanged(string value)
@@ -146,13 +163,24 @@ namespace Matsedeln.ViewModel
         [RelayCommand]
         public void ShowRecipesPage()
         {
-            WeakReferenceMessenger.Default.Send(new ChangePageMessenger("recipe"));
+            WeakReferenceMessenger.Default.Send(new ChangePageMessenger(PageType.Recipe));
+            WeakReferenceMessenger.Default.Send(new ChangeUsercontrolMessenger(UserControlType.Recipe));
         }
 
         [RelayCommand]
         public void ShowMenuPage()
         {
-            WeakReferenceMessenger.Default.Send(new ChangePageMessenger("menu"));
+            WeakReferenceMessenger.Default.Send(new ChangePageMessenger(PageType.Menu));
+            WeakReferenceMessenger.Default.Send(new ChangeUsercontrolMessenger(UserControlType.Menu));
+
+        }
+
+        [RelayCommand]
+        public void ShowDishesPage()
+        {
+            WeakReferenceMessenger.Default.Send(new ChangePageMessenger(PageType.Dishes));
+            WeakReferenceMessenger.Default.Send(new ChangeUsercontrolMessenger(UserControlType.Shopping));
+
         }
     }
 }

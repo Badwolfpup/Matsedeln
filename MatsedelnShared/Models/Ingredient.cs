@@ -1,12 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Drawing.Drawing2D;
-using System.Text;
 
 namespace MatsedelnShared.Models
 {
@@ -48,16 +43,15 @@ namespace MatsedelnShared.Models
         [ObservableProperty]
         private Goods _good;
 
-        
+
         [Required]
         public int RecipeId { get; set; }  // FK to Recipe
-        [Required]
         [ForeignKey(nameof(RecipeId))]
-        public Recipe Recipe { get; set; }  // Nav prop
+        public Recipe? Recipe { get; set; }  // Nav prop (nullable for JSON serialization with cycles)
 
 
         [NotMapped]
-        public  ObservableCollection<string> UnitOptions { get; set; }
+        public ObservableCollection<string> UnitOptions { get; set; }
 
 
         public Ingredient()
@@ -98,17 +92,21 @@ namespace MatsedelnShared.Models
         public void ConvertToOtherUnits()
         {
             if (string.IsNullOrEmpty(Unit)) return;
-            
+
             if (Good.GramsPerDeciliter != 0)
             {
-                QuantityInDl = QuantityInGram / Good.GramsPerDeciliter + QuantityInGram % Good.GramsPerDeciliter > 0 ? 1 : 0;
-                QuantityInMsk = QuantityInGram / (int)Math.Ceiling(((double)Good.GramsPerDeciliter / 20 * 3)) + (QuantityInGram % Good.GramsPerDeciliter > 0 ? 1 : 0);
-                QuantityInTsk = QuantityInGram / (int)Math.Ceiling(((double)Good.GramsPerDeciliter / 20)) + (QuantityInGram % Good.GramsPerDeciliter > 0 ? 1 : 0);
-                QuantityInKrm = QuantityInGram / (int)Math.Ceiling(((double)Good.GramsPerDeciliter / 100)) + (QuantityInGram % Good.GramsPerDeciliter > 0 ? 1 : 0);
+                QuantityInDl = QuantityInGram / Good.GramsPerDeciliter + (QuantityInGram % Good.GramsPerDeciliter > 0 ? 1 : 0);
+                QuantityInMsk = QuantityInGram / (int)Math.Ceiling(((double)Good.GramsPerDeciliter / 20 * 3)) + (QuantityInGram % (int)Math.Ceiling(((double)Good.GramsPerDeciliter / 20 * 3)) > 0 ? 1 : 0);
+                QuantityInTsk = QuantityInGram / (int)Math.Ceiling(((double)Good.GramsPerDeciliter / 20)) + (QuantityInGram % (int)Math.Ceiling(((double)Good.GramsPerDeciliter / 20)) > 0 ? 1 : 0);
+                var x = QuantityInGram / (int)Math.Ceiling(((double)Good.GramsPerDeciliter / 100));
+                var y = (QuantityInGram % (int)Math.Ceiling(((double)Good.GramsPerDeciliter / 100)) > 0 ? 1 : 0);
+                var z = (double)Good.GramsPerDeciliter / 100;
+                QuantityInKrm = QuantityInGram / (int)Math.Ceiling(((double)Good.GramsPerDeciliter / 100)) + (QuantityInGram % (double)Good.GramsPerDeciliter / 100 > 0 ? 1 : 0);
             }
-            if ((Good.GramsPerStick != 0)) QuantityInSt = QuantityInGram / Good.GramsPerStick + (QuantityInSt % Good.GramsPerStick > 0 ? 1 : 0);
+            if ((Good.GramsPerStick != 0)) QuantityInSt = QuantityInGram / Good.GramsPerStick + (QuantityInGram % Good.GramsPerStick > 0 ? 1 : 0);
 
-           
+            //if ((Good.GramsPerStick != 0)) QuantityInSt = QuantityInGram / Good.GramsPerStick + (Good.GramsPerStick % QuantityInSt > 0 ? 1 : 0);
+
         }
 
         public void Initialize()
@@ -124,9 +122,9 @@ namespace MatsedelnShared.Models
             else if (Unit == "dl") QuantityInGram = (int)(Good.GramsPerDeciliter * q);
             else if (Unit == "st") QuantityInGram = (int)(Good.GramsPerStick * q);
             else if (Unit == "kg") QuantityInGram = (int)q * 1000;
-            else if (Unit == "msk") QuantityInGram = (int)((Good.GramsPerDeciliter / 20 * 3) * q);
-            else if (Unit == "tsk") QuantityInGram = (int)((Good.GramsPerDeciliter / 20) * q);
-            else if (Unit == "krm") QuantityInGram = (int)((Good.GramsPerDeciliter / 100) * q);
+            else if (Unit == "msk") QuantityInGram = (int)((Good.GramsPerDeciliter / 20 * 3) * q) + ((Good.GramsPerDeciliter / 20 * 3) * q < 1 ? 1 : 0);
+            else if (Unit == "tsk") QuantityInGram = (int)((Good.GramsPerDeciliter / 20) * q) + ((Good.GramsPerDeciliter / 20) * q < 1 ? 1 : 0);
+            else if (Unit == "krm") QuantityInGram = (int)((Good.GramsPerDeciliter / 100) * q) + ((Good.GramsPerDeciliter / 100) * q < 1 ? 1 : 0);
         }
 
 

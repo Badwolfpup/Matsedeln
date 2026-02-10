@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"C:\\\\Users\\\\adam_\\\\source\\\\repos\\\\Matsedeln\" /B)",
+      "Bash(dotnet build:*)"
+    ]
+  }
+}
