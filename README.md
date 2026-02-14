@@ -50,20 +50,20 @@ Shared models and database context used by both client and server.
 
 ```
 Matsedeln/
-â”œâ”€â”€ Matsedeln/                # WPF Desktop Client
-â”‚   â”œâ”€â”€ Pages/                # Main application pages
-â”‚   â”œâ”€â”€ ViewModel/            # MVVM ViewModels
-â”‚   â”œâ”€â”€ Converters/           # 11 value converters
-â”‚   â”œâ”€â”€ Messengers/           # 15 messenger classes
-â”‚   â”œâ”€â”€ Usercontrols/         # Reusable UI components
-â”‚   â”œâ”€â”€ Utils/                # API service, image handler
-â”‚   â””â”€â”€ Wrappers/             # Observable wrappers
-â”œâ”€â”€ Matserver/                # ASP.NET Core API
-â”‚   â”œâ”€â”€ Controllers/          # REST controllers
-â”‚   â”œâ”€â”€ Migrations/           # EF Core migrations
-â”‚   â””â”€â”€ wwwroot/images/       # Uploaded recipe images
-â””â”€â”€ MatsedelnShared/          # Shared library
-    â””â”€â”€ Models/               # Shared entity models
+├── Matsedeln/                # WPF Desktop Client
+│   ├── Pages/                # Main application pages
+│   ├── ViewModel/            # MVVM ViewModels
+│   ├── Converters/           # 11 value converters
+│   ├── Messengers/           # 15 messenger classes
+│   ├── Usercontrols/         # Reusable UI components
+│   ├── Utils/                # API service, image handler
+│   └── Wrappers/             # Observable wrappers
+├── Matserver/                # ASP.NET Core API
+│   ├── Controllers/          # REST controllers
+│   ├── Migrations/           # EF Core migrations
+│   └── wwwroot/images/       # Uploaded recipe images
+└── MatsedelnShared/          # Shared library
+    └── Models/               # Shared entity models
 ```
 
 ## Getting Started
